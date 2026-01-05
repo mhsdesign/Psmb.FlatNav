@@ -1,12 +1,14 @@
 <?php
 namespace Psmb\FlatNav\Controller;
 
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Eel\Utility;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\View\JsonView;
 use Neos\Neos\Ui\Fusion\Helper\NodeInfoHelper;
-use Neos\Neos\Ui\ContentRepository\Service\NodeService;
 
 class StandardController extends ActionController
 {
@@ -16,12 +18,6 @@ class StandardController extends ActionController
     protected $viewFormatToObjectNameMap = [
         'html' => JsonView::class
     ];
-
-    /**
-     * @Flow\Inject
-     * @var NodeService
-     */
-    protected $nodeService;
 
     /**
      * @Flow\InjectConfiguration(package="Neos.Neos.Ui", path="frontendConfiguration.Psmb_FlatNav.presets")
@@ -42,8 +38,14 @@ class StandardController extends ActionController
     protected $eelEvaluator;
 
     /**
+     * @Flow\Inject
+     * @var ContentRepositoryRegistry
+     */
+    protected $contentRepositoryRegistry;
+
+    /**
      * @param string $preset The preset, configured in Settings.yaml
-     * @param string $nodeContextPath The context path of the node that will be available as `node` context var in Eel
+     * @param string $nodeContextPath The node address of the site
      * @param integer $page Page parameter used for pagination
      * @param string $searchTerm Search term
      * @return void
@@ -61,16 +63,23 @@ class StandardController extends ActionController
         } else {
             $expression = '${' . $this->presets[$preset]['query'] . '}';
         }
-        $baseNode = $this->nodeService->getNodeFromContextPath($nodeContextPath, null, null, true);
+
+        $nodeAddress = NodeAddress::fromJsonString($nodeContextPath);
+        $contentRepository = $this->contentRepositoryRegistry->get($nodeAddress->contentRepositoryId);
+        $subgraph = $contentRepository->getContentSubgraph($nodeAddress->workspaceName, $nodeAddress->dimensionSpacePoint);
+
+        $baseNode = $subgraph->findNodeById($nodeAddress->aggregateId);
         if ($isSearch) {
             $contextVariables = [
                 'node' => $baseNode,
+                'site' => $baseNode,
                 'page' => $page,
                 'searchTerm' => $searchTerm
             ];
         } else {
             $contextVariables = [
                 'node' => $baseNode,
+                'site' => $baseNode,
                 'page' => $page
             ];
         }
@@ -80,9 +89,7 @@ class StandardController extends ActionController
 
         $result = [];
         foreach ($nodes as $node) {
-            $nodeInfo = $nodeInfoHelper->renderNodeWithMinimalPropertiesAndChildrenInformation($node, $this->getControllerContext());
-            $nodeInfo['properties']['_removed'] = $node->isRemoved();
-            $nodeInfo['properties']['_hidden'] = $node->isHidden();
+            $nodeInfo = $nodeInfoHelper->renderNodeWithMinimalPropertiesAndChildrenInformation($node, $this->request);
             $result[] = $nodeInfo;
         }
         $this->view->assign('value', $result);
@@ -90,7 +97,7 @@ class StandardController extends ActionController
 
     /**
      * @param string $preset The preset, configured in Settings.yaml
-     * @param string $nodeContextPath The context path of the node that will be available as `node` context var in Eel
+     * @param string $nodeContextPath The node address of the site
      * @return void
      * @throws \Neos\Eel\Exception
      * @Flow\SkipCsrfProtection
@@ -101,20 +108,25 @@ class StandardController extends ActionController
             throw new \Exception('Invalid preset name', 1660762934);
         }
 
-        $baseNode = $this->nodeService->getNodeFromContextPath($nodeContextPath, null, null, true);
+        $nodeAddress = NodeAddress::fromJsonString($nodeContextPath);
+        $contentRepository = $this->contentRepositoryRegistry->get($nodeAddress->contentRepositoryId);
+        $subgraph = $contentRepository->getContentSubgraph($nodeAddress->workspaceName, $nodeAddress->dimensionSpacePoint);
 
+        $baseNode = $subgraph->findNodeById($nodeAddress->aggregateId);
         if(isset($this->presets[$preset]['newReferenceNodePath'])) {
             $expression = '${' . $this->presets[$preset]['newReferenceNodePath'] . '}';
-            $baseNode = $this->nodeService->getNodeFromContextPath($nodeContextPath, null, null, true);
             $contextVariables = [
                 'node' => $baseNode,
                 'site' => $baseNode
             ];
-            $newReferenceNodePath = Utility::evaluateEelExpression($expression, $this->eelEvaluator, $contextVariables, $this->defaultContextConfiguration);
+            $newReferenceNode = Utility::evaluateEelExpression($expression, $this->eelEvaluator, $contextVariables, $this->defaultContextConfiguration);
+            if (!$newReferenceNode instanceof Node) {
+                throw new \RuntimeException(sprintf('Expected expression "%s" to evaluate to a node got "%s"', $expression, is_scalar($newReferenceNode) ? $newReferenceNode : get_debug_type($newReferenceNode)), 1767604672);
+            }
         } else {
-            $newReferenceNodePath = $baseNode;
+            $newReferenceNode = $baseNode;
         }
 
-        $this->view->assign('value', $newReferenceNodePath);
+        $this->view->assign('value', NodeAddress::fromNode($newReferenceNode)->toJson());
     }
 }
