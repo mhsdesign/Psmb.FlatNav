@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, IconButton, TextInput} from '@neos-project/react-ui-components';
+import {Button, Icon, IconButton} from '@neos-project/react-ui-components';
 import {connect} from 'react-redux';
 import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 import {neos} from '@neos-project/neos-ui-decorators';
@@ -17,24 +17,24 @@ import SearchInput from "./SearchInput";
 }))
 @connect(
     (state, {nodeTypesRegistry}) => {
-        const isAllowedToAddChildOrSiblingNodesSelector = selectors.CR.Nodes.makeIsAllowedToAddChildOrSiblingNodes(nodeTypesRegistry);
+        // const isAllowedToAddChildOrSiblingNodesSelector = selectors.CR.Nodes.makeIsAllowedToAddChildOrSiblingNodes(nodeTypesRegistry);
         return (state, {newReferenceNodePath}) => {
             const focusedNodeContextPath = selectors.UI.PageTree.getFocused(state);
             const getNodeByContextPathSelector = selectors.CR.Nodes.makeGetNodeByContextPathSelector(focusedNodeContextPath);
             const focusedNode = getNodeByContextPathSelector(state);
             const canBeDeleted = focusedNode?.policy?.canRemove || false;
             const canBeEdited = focusedNode?.policy?.canEdit || false;
-            const context = focusedNodeContextPath.split('@')[1];
-            const isAllowedToAddChildOrSiblingNodes = isAllowedToAddChildOrSiblingNodesSelector(state, {
-                reference: newReferenceNodePath + '@' + context
-            });
+            // const context = focusedNodeContextPath.split('@')[1];
+            // const isAllowedToAddChildOrSiblingNodes = isAllowedToAddChildOrSiblingNodesSelector(state, {
+            //     reference: newReferenceNodePath + '@' + context
+            // });
             return {
                 nodeData: state?.cr?.nodes?.byContextPath,
                 focused: selectors.CR.Nodes.focusedNodePathSelector(state),
                 siteNodeContextPath: selectors.CR.Nodes.siteNodeContextPathSelector(state),
                 baseWorkspaceName: state?.cr?.workspaces?.personalWorkspace?.baseWorkspace,
                 publishableNodes: state?.cr?.workspaces?.personalWorkspace?.publishableNodes,
-                isAllowedToAddChildOrSiblingNodes,
+                isAllowedToAddChildOrSiblingNodes: true,
                 canBeDeleted,
                 canBeEdited
             }
@@ -65,7 +65,7 @@ export default class FlatNav extends Component {
             this.props.nodes.length === 0
         ) {
             this.props.fetchNodes();
-            this.props.fetchNewReference();
+            // this.props.fetchNewReference();
         }
         this.props.serverFeedbackHandlers.set('Neos.Neos.Ui:NodeCreated/DocumentAdded', this.handleNodeWasCreated, 'after Neos.Neos.Ui:NodeCreated/Main');
     }
@@ -76,7 +76,7 @@ export default class FlatNav extends Component {
             !this.props.nodes.every(contextPath => this.props.nodeData?.[contextPath])
         ) {
             this.props.fetchNodes();
-            this.props.fetchNewReference();
+            // this.props.fetchNewReference();
         }
     }
 
@@ -92,14 +92,22 @@ export default class FlatNav extends Component {
         }
     }
 
-    buildNewReferenceNodePath = () => {
-        const context = this.props.siteNodeContextPath.split('@')[1];
-        return this.props.newReferenceNodePath + '@' + context;
-    };
+    // buildNewReferenceNodePath = () => {
+    //     const context = this.props.siteNodeContextPath.split('@')[1];
+    //     return this.props.newReferenceNodePath + '@' + context;
+    // };
 
     createNode = () => {
-        const contextPath = this.buildNewReferenceNodePath();
-        this.props.commenceNodeCreation(contextPath, undefined, 'into', this.props.preset.newNodeType || undefined);
+        // const contextPath = this.buildNewReferenceNodePath();
+        const siteNodeAddressObject = JSON.parse(this.props.siteNodeContextPath);
+        const parentNodeAddressObject = {
+            contentRepositoryId: siteNodeAddressObject.contentRepositoryId,
+            workspaceName: siteNodeAddressObject.workspaceName,
+            dimensionSpacePoint: siteNodeAddressObject.dimensionSpacePoint,
+            aggregateId: this.props.preset.parentNodeAggregateId || siteNodeAddressObject.aggregateId,
+        };
+        const parentNodeAddressString = JSON.stringify(parentNodeAddressObject);
+        this.props.commenceNodeCreation(parentNodeAddressString, undefined, 'into', this.props.preset.newNodeType || undefined);
     }
 
     refreshFlatNav = () => {
@@ -200,7 +208,7 @@ export default class FlatNav extends Component {
             <div className={style.pageTreeContainer}>
                 <div className={style.toolbar}>
                     <div className={style.toolbarButtons}>
-                        <IconButton icon="plus" disabled={isLoadingReferenceNodePath || !isAllowedToAddChildOrSiblingNodes} onClick={this.createNode}/>
+                        <IconButton icon="plus" onClick={this.createNode}/>
                         <HideSelectedNode disabled={!focusedInNodes || !canBeEdited}/>
                         <DeleteSelectedNode disabled={!focusedInNodes || !canBeDeleted || !canBeEdited}/>
                         <RefreshNodes disabled={isLoading || isLoadingReferenceNodePath} onClick={this.refreshFlatNav}/>
