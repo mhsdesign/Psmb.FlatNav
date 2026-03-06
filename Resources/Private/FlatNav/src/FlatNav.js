@@ -50,7 +50,7 @@ import SearchInput from "./SearchInput";
 })
 export default class FlatNav extends Component {
     static propTypes = {
-        nodes: PropTypes.array.isRequired,
+        treeItems: PropTypes.array.isRequired,
         preset: PropTypes.object.isRequired,
         isLoading: PropTypes.bool.isRequired,
         isLoadingReferenceNodePath: PropTypes.bool.isRequired,
@@ -62,7 +62,7 @@ export default class FlatNav extends Component {
     componentDidMount() {
         if (
             // No node paths in state on initial load
-            this.props.nodes.length === 0
+            this.props.treeItems.length === 0
         ) {
             this.props.fetchNodes();
             // this.props.fetchNewReference();
@@ -73,7 +73,7 @@ export default class FlatNav extends Component {
     componentDidUpdate() {
         if (
             // Node data not available for some nodes (e.g. after tree reload)
-            !this.props.nodes.every(contextPath => this.props.nodeData?.[contextPath])
+            !this.props.treeItems.filter(treeItem => treeItem.occupiedNode).every(treeItem => this.props.nodeData?.[treeItem.occupiedNode.contextPath])
         ) {
             this.props.fetchNodes();
             // this.props.fetchNewReference();
@@ -147,60 +147,92 @@ export default class FlatNav extends Component {
         );
     }
 
-    renderNodes = () => {
-        if (this.props.searchTerm && !this.props.isLoading &&  this.props.nodes.length === 0) {
+    renderTreeItems = () => {
+        if (this.props.searchTerm && !this.props.isLoading &&  this.props.treeItems.length === 0) {
             return <span className={style.toolbarSearchNoResults}>{this.props.i18nRegistry.translate('Psmb.FlatNav:Main:noResults')}</span>
         }
-        return this.props.nodes
-            .map(contextPath => {
-                const item = this.props.nodeData?.[contextPath];
+        return this.props.treeItems
+            .map(treeItem => {
+                if (treeItem.occupiedNode) {
+                    const treeItemContextPath = treeItem.occupiedNode.contextPath;
 
-                if (item) {
-                    const isFocused = this.props.focused === contextPath;
-                    const isDirty = this.props.publishableNodes.filter(i => (
-                        i?.contextPath === contextPath ||
-                        i?.documentContextPath === contextPath
-                    )).length > 0;
-                    const isRemoved = item?.properties?._removed;
-                    const nodeIconComponent = this.getNodeIconComponent(item);
+                    // use latest state from nodeData instead of node from query
+                    const nodeData = this.props.nodeData?.[treeItemContextPath];
+
+                    if (nodeData) {
+                        const isFocused = this.props.focused === treeItemContextPath;
+                        const isDirty = this.props.publishableNodes.filter(i => (
+                            i?.contextPath === treeItemContextPath ||
+                            i?.documentContextPath === treeItemContextPath
+                        )).length > 0;
+                        const isRemoved = nodeData?.properties?._removed;
+                        const nodeIconComponent = this.getNodeIconComponent(nodeData);
+                        const nodeItemClassNames = mergeClassNames({
+                            [style.node]: true,
+                            [style.nodeFocused]: isFocused,
+                            [style.nodeDirty]: isDirty,
+                            [style.nodeRemoved]: isRemoved
+                        })
+
+                        return (
+                            <div
+                                className={nodeItemClassNames}
+                                key={treeItemContextPath}
+                                onClick={() => {
+                                    if ( ! isRemoved) {
+                                        this.props.setSrc(nodeData?.uri);
+                                        this.props.focus(treeItemContextPath);
+                                    }
+                                }}
+                                role="button"
+                                >
+                                <div
+                                    className={style.nodeIconWrapper}>
+                                    {nodeIconComponent}
+                                </div>
+                                <span
+                                    className={style.nodeLabel}>
+                                    {nodeData?.label}
+                                </span>
+                            </div>
+                        );
+                    }
+                }
+
+                if (treeItem.nodeVariantReference) {
                     const nodeItemClassNames = mergeClassNames({
                         [style.node]: true,
-                        [style.nodeFocused]: isFocused,
-                        [style.nodeDirty]: isDirty,
-                        [style.nodeRemoved]: isRemoved
+                        [style.nodeForeign]: true
                     })
 
                     return (
                         <div
                             className={nodeItemClassNames}
-                            key={contextPath}
+                            key={treeItem.nodeVariantReference.nodeAggregateId}
                             onClick={() => {
-                                if ( ! isRemoved) {
-                                    this.props.setSrc(item?.uri);
-                                    this.props.focus(contextPath);
-                                }
+                                console.log('Happy birthday');
                             }}
                             role="button"
-                            >
+                        >
                             <div
                                 className={style.nodeIconWrapper}>
-                                {nodeIconComponent}
                             </div>
                             <span
                                 className={style.nodeLabel}>
-                                {item?.label}
-                            </span>
+                                    {treeItem.nodeVariantReference.label}
+                                </span>
                         </div>
                     );
                 }
+
                 return null;
             }).filter(i => i);
     };
 
     render() {
-        const {focused, nodes, isLoadingReferenceNodePath, isLoading, preset, isAllowedToAddChildOrSiblingNodes, canBeDeleted, canBeEdited} = this.props;
+        const {focused, treeItems, isLoadingReferenceNodePath, isLoading, preset, isAllowedToAddChildOrSiblingNodes, canBeDeleted, canBeEdited} = this.props;
 
-        const focusedInNodes = nodes.includes(focused);
+        const focusedInTreeItems = treeItems.find((treeItem) => treeItem.occupiedNode?.contextPath === focused);
 
         const searchEnabled = Boolean(preset.searchQuery)
 
@@ -209,15 +241,15 @@ export default class FlatNav extends Component {
                 <div className={style.toolbar}>
                     <div className={style.toolbarButtons}>
                         <IconButton icon="plus" onClick={this.createNode}/>
-                        <HideSelectedNode disabled={!focusedInNodes || !canBeEdited}/>
-                        <DeleteSelectedNode disabled={!focusedInNodes || !canBeDeleted || !canBeEdited}/>
+                        <HideSelectedNode disabled={!focusedInTreeItems || !canBeEdited}/>
+                        <DeleteSelectedNode disabled={!focusedInTreeItems || !canBeDeleted || !canBeEdited}/>
                         <RefreshNodes disabled={isLoading || isLoadingReferenceNodePath} onClick={this.refreshFlatNav}/>
                     </div>
                     {searchEnabled && <SearchInput searchTerm={this.props.searchTerm} onChange={this.props.setSearchTerm} placeholder={this.props.i18nRegistry.translate('Psmb.FlatNav:Main:search')}/>}
                 </div>
 
                 <div className={style.treeWrapper}>
-                    {this.renderNodes()}
+                    {this.renderTreeItems()}
                     {(isLoading || (!this.props.preset.disablePagination && this.props.moreNodesAvailable && !this.props.searchTerm)) && (<Button
                         onClick={() => this.props.fetchNodes(true)}
                         style="clean"

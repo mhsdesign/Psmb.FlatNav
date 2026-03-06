@@ -106,6 +106,10 @@
 .nodeRemoved .nodeIconWrapper {
     opacity: 0.5;
 }
+.nodeForeign .nodeLabel,
+.nodeForeign .nodeIconWrapper {
+    opacity: 0.5;
+}
 
 .nodeLabel {
     overflow-x: hidden;

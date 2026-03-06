@@ -68,7 +68,7 @@ const makeFlatNavContainer = OriginalPageTree => {
                     page: 1,
                     isLoading: false,
                     isLoadingReferenceNodePath: false,
-                    nodes: [],
+                    treeItems: [],
                     searchTerm: '',
                     moreNodesAvailable: true,
                     newReferenceNodePath
@@ -89,7 +89,7 @@ const makeFlatNavContainer = OriginalPageTree => {
                 [preset]: {
                     ...this.state[preset],
                     page: 1,
-                    nodes: [],
+                    treeItems: [],
                     moreNodesAvailable: true
                 }
             }, fetchNodes);
@@ -121,12 +121,14 @@ const makeFlatNavContainer = OriginalPageTree => {
                 }
             }))
                 .then(response => response && response.json())
-                .then(nodes => {
+                .then(treeItems => {
                     // Ignore the response if the searchTerm has changed while request was running
                     if (searchTerm === this.state[preset].searchTerm) {
-                        if (nodes.length > 0) {
-                            const nodesMap = nodes.reduce((result, node) => {
-                                result[node.contextPath] = node;
+                        if (treeItems.length > 0) {
+                            const nodesMap = treeItems.reduce((result, treeItem) => {
+                                if (treeItem.occupiedNode) {
+                                    result[treeItem.occupiedNode.contextPath] = treeItem.occupiedNode;
+                                }
                                 return result;
                             }, {});
                             this.props.merge(nodesMap);
@@ -134,7 +136,7 @@ const makeFlatNavContainer = OriginalPageTree => {
                                 [preset]: {
                                     ...this.state[preset],
                                     isLoading: false,
-                                    nodes: loadMore ? [...this.state[preset].nodes, ...Object.keys(nodesMap)] : Object.keys(nodesMap),
+                                    treeItems: loadMore ? [...this.state[preset].treeItems, ...treeItems] : treeItems,
                                     page,
                                     moreNodesAvailable: true
                                 }
@@ -145,7 +147,7 @@ const makeFlatNavContainer = OriginalPageTree => {
                                     ...this.state[preset],
                                     isLoading: false,
                                     moreNodesAvailable: false,
-                                    nodes: loadMore ? this.state[preset].nodes : [],
+                                    treeItems: loadMore ? this.state[preset].treeItems : [],
                                 }
                             });
                         }
@@ -158,7 +160,7 @@ const makeFlatNavContainer = OriginalPageTree => {
             this.setState({
                 [preset]: {
                     ...this.state[preset],
-                    nodes: [],
+                    treeItems: [],
                     page: 1,
                     isLoading: true,
                     searchTerm

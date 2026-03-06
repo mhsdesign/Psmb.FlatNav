@@ -1,6 +1,7 @@
 <?php
 namespace Psmb\FlatNav\Controller;
 
+use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
@@ -9,6 +10,8 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\View\JsonView;
 use Neos\Neos\Ui\Fusion\Helper\NodeInfoHelper;
+use Psmb\FlatNav\NodePeerVariantReference;
+use Psmb\FlatNav\NodeTreeProviderInterface;
 
 class StandardController extends ActionController
 {
@@ -57,18 +60,47 @@ class StandardController extends ActionController
         if (!isset($this->presets[$preset])) {
             throw new \Exception('Invalid preset name');
         }
-        $isSearch = $searchTerm && $this->presets[$preset]['searchQuery'];
-        if ($isSearch) {
-            $expression = '${' . $this->presets[$preset]['searchQuery'] . '}';
-        } else {
-            $expression = '${' . $this->presets[$preset]['query'] . '}';
-        }
 
         $nodeAddress = NodeAddress::fromJsonString($nodeContextPath);
         $contentRepository = $this->contentRepositoryRegistry->get($nodeAddress->contentRepositoryId);
         $subgraph = $contentRepository->getContentSubgraph($nodeAddress->workspaceName, $nodeAddress->dimensionSpacePoint);
 
         $baseNode = $subgraph->findNodeById($nodeAddress->aggregateId);
+
+        /** @var class-string<NodeTreeProviderInterface> $nodeTreeProviderClassName */
+        $nodeTreeProviderClassName = $this->presets[$preset]['nodeTreeProviderClassName'];
+        /** @var NodeTreeProviderInterface $nodeTreeProvider */
+        $nodeTreeProvider = $this->objectManager->get($nodeTreeProviderClassName);
+        $nodeTreeItems = $nodeTreeProvider->provideItems($baseNode, $page, $searchTerm);
+
+        $nodeInfoHelper = new NodeInfoHelper();
+        $result = [];
+        foreach ($nodeTreeItems->items as $nodeTreeItem) {
+            $item = [];
+            if ($nodeTreeItem->node instanceof Node) {
+                $serializedNode = $nodeInfoHelper->renderNodeWithMinimalPropertiesAndChildrenInformation($nodeTreeItem->node, $this->request);
+                $item['occupiedNode'] = $serializedNode;
+            }
+            if ($nodeTreeItem->node instanceof NodePeerVariantReference) {
+                $item['nodeVariantReference'] = $nodeTreeItem->node->jsonSerialize();
+            }
+
+            $item['occupiedDimensions'] = array_map(
+                fn (OriginDimensionSpacePoint $originDimensionSpacePoint) => $originDimensionSpacePoint->toLegacyDimensionArray(),
+                array_values($nodeTreeItem->occupiedDimensionSpacePoints->getPoints())
+            );
+
+            $result[] = $item;
+        }
+        $this->view->assign('value', $result);
+        return;
+
+        $isSearch = $searchTerm && $this->presets[$preset]['searchQuery'];
+        if ($isSearch) {
+            $expression = '${' . $this->presets[$preset]['searchQuery'] . '}';
+        } else {
+            $expression = '${' . $this->presets[$preset]['query'] . '}';
+        }
         if ($isSearch) {
             $contextVariables = [
                 'node' => $baseNode,
