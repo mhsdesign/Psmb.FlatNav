@@ -16,14 +16,15 @@ import SearchInput from "./SearchInput";
     i18nRegistry: globalRegistry.get('i18n')
 }))
 @connect(
-    (state, {nodeTypesRegistry}) => {
-        // const isAllowedToAddChildOrSiblingNodesSelector = selectors.CR.Nodes.makeIsAllowedToAddChildOrSiblingNodes(nodeTypesRegistry);
-        return (state, {newReferenceNodePath}) => {
+    () => {
+        return (state) => {
             const focusedNodeContextPath = selectors.UI.PageTree.getFocused(state);
             const getNodeByContextPathSelector = selectors.CR.Nodes.makeGetNodeByContextPathSelector(focusedNodeContextPath);
             const focusedNode = getNodeByContextPathSelector(state);
             const canBeDeleted = focusedNode?.policy?.canRemove || false;
             const canBeEdited = focusedNode?.policy?.canEdit || false;
+            // TODO re-enable node creation constraint checks?
+            // const isAllowedToAddChildOrSiblingNodesSelector = selectors.CR.Nodes.makeIsAllowedToAddChildOrSiblingNodes(nodeTypesRegistry);
             // const context = focusedNodeContextPath.split('@')[1];
             // const isAllowedToAddChildOrSiblingNodes = isAllowedToAddChildOrSiblingNodesSelector(state, {
             //     reference: newReferenceNodePath + '@' + context
@@ -39,8 +40,8 @@ import SearchInput from "./SearchInput";
                 canBeEdited
             }
         }
-    }
-, {
+    },
+{
     setSrc: actions.UI.ContentCanvas.setSrc,
     focus: actions.UI.PageTree.focus,
     openNodeCreationDialog: actions.UI.NodeCreationDialog.open,
@@ -53,9 +54,7 @@ export default class FlatNav extends Component {
         treeItems: PropTypes.array.isRequired,
         preset: PropTypes.object.isRequired,
         isLoading: PropTypes.bool.isRequired,
-        isLoadingReferenceNodePath: PropTypes.bool.isRequired,
         page: PropTypes.number.isRequired,
-        newReferenceNodePath: PropTypes.string.isRequired,
         moreNodesAvailable: PropTypes.bool.isRequired,
         nodePeerVariationHandler: PropTypes.object.isRequired
     };
@@ -66,8 +65,8 @@ export default class FlatNav extends Component {
             this.props.treeItems.length === 0
         ) {
             this.props.fetchNodes();
-            // this.props.fetchNewReference();
         }
+        // TODO hacky and not cleaned up
         this.props.serverFeedbackHandlers.set('Neos.Neos.Ui:NodeCreated/DocumentAdded', this.handleNodeWasCreated, 'after Neos.Neos.Ui:NodeCreated/Main');
     }
 
@@ -77,7 +76,6 @@ export default class FlatNav extends Component {
             !this.props.treeItems.filter(treeItem => treeItem.occupiedNode).every(treeItem => this.props.nodeData?.[treeItem.occupiedNode.contextPath])
         ) {
             this.props.fetchNodes();
-            // this.props.fetchNewReference();
         }
     }
 
@@ -93,13 +91,7 @@ export default class FlatNav extends Component {
         }
     }
 
-    // buildNewReferenceNodePath = () => {
-    //     const context = this.props.siteNodeContextPath.split('@')[1];
-    //     return this.props.newReferenceNodePath + '@' + context;
-    // };
-
     createNode = () => {
-        // const contextPath = this.buildNewReferenceNodePath();
         const siteNodeAddressObject = JSON.parse(this.props.siteNodeContextPath);
         const parentNodeAddressObject = {
             contentRepositoryId: siteNodeAddressObject.contentRepositoryId,
@@ -225,7 +217,7 @@ export default class FlatNav extends Component {
     };
 
     render() {
-        const {focused, treeItems, isLoadingReferenceNodePath, isLoading, preset, isAllowedToAddChildOrSiblingNodes, canBeDeleted, canBeEdited} = this.props;
+        const {focused, treeItems, isLoading, preset, canBeDeleted, canBeEdited} = this.props;
 
         const focusedInTreeItems = treeItems.find((treeItem) => treeItem.occupiedNode?.contextPath === focused);
 
@@ -238,7 +230,7 @@ export default class FlatNav extends Component {
                         <IconButton icon="plus" onClick={this.createNode}/>
                         <HideSelectedNode disabled={!focusedInTreeItems || !canBeEdited}/>
                         <DeleteSelectedNode disabled={!focusedInTreeItems || !canBeDeleted || !canBeEdited}/>
-                        <RefreshNodes disabled={isLoading || isLoadingReferenceNodePath} onClick={this.refreshFlatNav}/>
+                        <RefreshNodes disabled={isLoading} onClick={this.refreshFlatNav}/>
                     </div>
                     {searchEnabled && <SearchInput searchTerm={this.props.searchTerm} onChange={this.props.setSearchTerm} placeholder={this.props.i18nRegistry.translate('Psmb.FlatNav:Main:search')}/>}
                 </div>

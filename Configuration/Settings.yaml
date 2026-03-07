@@ -20,46 +20,14 @@ Neos:
               type: tree
               label: Tree
               icon: tree
-            ## Example using ElasticSearch
+            ## Example
             # news:
             #   label: News
             #   icon: newspaper
             #   type: flat
-            #   query: 'Search.query(node).nodeType("Your.Namespace:News").sortDesc("date").from((page - 1) * 20).limit(20).execute().toArray()'
-            #   newReferenceNodePath: '/sites/site'
-            #   # If now `newNodeType` is defined, then the nodetype selection dialog would be shown
+            #   nodeTreeProviderClassName: 'Vendor\Site\NodeTreeProvider' # must implement NodeTreeProviderInterface
+            #   parentNodeAggregateId: '<node-id>'
             #   newNodeType: 'Your.Namespace:News'
-            #   disablePagination: false
-            #   # Disable this preset for non-admins
-            #   disabled: '${!Security.hasRole("Neos.Neos:Administrator")}'
-            ## Example without pagination
-            # newsWithoutPagination:
-            #   label: News
-            #   icon: newspaper
-            #   type: flat
-            #   query: 'q(node).find("[instanceof Your.Namespace:News]").sort("date", "ASC").get()'
-            #   newReferenceNodePath: '/sites/site'
-            #   newNodeType: 'Your.Namespace:News'
-            #   disablePagination: true
-            ## Example using FlowQuery
-            # tags:
-            #   label: Tags
-            #   icon: tag
-            #   type: flat
-            #   query: 'q(node).find("[instanceof Your.Namespace:Tag]").sort("title", "ASC").slice((page - 1) * 20, page * 20).get()'
-            #   newReferenceNodePath: 'q(node).find("[instanceof Your.Namespace:NewsList]").first().get(0).path'
-            #   newNodeType: 'Your.Namespace:Tag'
-            #   disablePagination: false
-            ## Example using FlowQuery with search
-            # tags:
-            #   label: Tags
-            #   icon: tag
-            #   type: flat
-            #   query: 'q(node).find("[instanceof Your.Namespace:Tag]").sort("title", "ASC").slice((page - 1) * 20, page * 20).get()'
-            #   # NB! This query would give case sensitive results, it's just an example!
-            #   searchQuery: 'q(node).find("[instanceof Your.Namespace:Tag][title*=\"" + searchTerm + "\"]").sort("title", "ASC").get()'
-            #   newReferenceNodePath: 'q(node).find("[instanceof Your.Namespace:NewsList]").first().get(0).path'
-            #   newNodeType: 'Your.Namespace:Tag'
             #   disablePagination: false
 
   Flow:

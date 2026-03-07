@@ -4,27 +4,9 @@ import {connect} from 'react-redux';
 import {actions} from '@neos-project/neos-ui-redux-store';
 import {neos} from '@neos-project/neos-ui-decorators';
 import {fetchWithErrorHandling} from '@neos-project/neos-ui-backend-connector';
-import backend from '@neos-project/neos-ui-backend-connector';
 import FlatNav from './FlatNav';
 import style from './style.module.css';
 import debounce from './Helper/debounce';
-
-// Taken from here, as it's not exported in the UI
-// https://github.com/neos/neos-ui/blob/b2a52d66a211b192dfc541799779a8be27bf5a31/packages/neos-ui-sagas/src/CR/NodeOperations/helpers.js#L3
-const parentNodeContextPath = contextPath => {
-    if (typeof contextPath !== 'string') {
-        return null;
-    }
-
-    const [path, context] = contextPath.split('@');
-
-    if (path.length === 0) {
-        // We are at top level; so there is no parent anymore!
-        return false;
-    }
-
-    return `${path.substr(0, path.lastIndexOf('/'))}@${context}`;
-};
 
 const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
     class FlatNavContainer extends Component {
@@ -36,7 +18,6 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
 
             // It's not safe to rely on React's state to do the locking
             this.loadingLock = {};
-            this.loadingReferenceNodePathLock = {};
         }
 
         componentDidUpdate(prevProps) {
@@ -52,26 +33,12 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
         buildDefaultState = props => {
             const state = {};
             Object.keys(props.options.presets).forEach(presetName => {
-                const preset = props.options.presets[presetName];
-                if (!presetName) {
-                    return null;
-                }
-                let newReferenceNodePath;
-                // If `newReferenceNodePath` is static, append context to it, otherwise set to empty, as it would be fetched later
-                const newReferenceNodePathSetting = props?.options?.presets?.[presetName]?.newReferenceNodePath;
-                if (typeof newReferenceNodePathSetting === 'string' && newReferenceNodePathSetting.indexOf('/') === 0) {
-                    newReferenceNodePath = preset.newReferenceNodePath;
-                } else {
-                    newReferenceNodePath = '';
-                }
                 state[presetName] = {
                     page: 1,
                     isLoading: false,
-                    isLoadingReferenceNodePath: false,
                     treeItems: [],
                     searchTerm: '',
-                    moreNodesAvailable: true,
-                    newReferenceNodePath
+                    moreNodesAvailable: true
                 };
             });
             return state;
@@ -168,69 +135,6 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
             }, fetchNodes);
         }
 
-        // Gets the `newReferenceNodePath` setting and loads that node into state
-        makeGetNewReference = preset => () => {
-            if (this.loadingReferenceNodePathLock[preset]) {
-                return;
-            }
-            this.loadingReferenceNodePathLock[preset] = true;
-            const context = this.props.siteNodeContextPath.split('@')[1];
-            if (this.state[preset].newReferenceNodePath.indexOf('/') === 0) {
-                this.fetchNodeWithParents(this.state[preset].newReferenceNodePath + '@' + context);
-            } else {
-                this.setState({
-                    [preset]: {
-                        ...this.state[preset],
-                        isLoadingReferenceNodePath: true
-                    }
-                });
-                fetchWithErrorHandling.withCsrfToken(csrfToken => ({
-                    url: `/neos/flatnav/getNewReferenceNodePath?nodeContextPath=${encodeURIComponent(this.props.siteNodeContextPath)}&preset=${preset}`,
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        'X-Flow-Csrftoken': csrfToken,
-                        'Content-Type': 'application/json'
-                    }
-                }))
-                    .then(response => response && response.json())
-                    .then(newReferenceNodePath => {
-                        this.setState({
-                            [preset]: {
-                                ...this.state[preset],
-                                isLoadingReferenceNodePath: false,
-                                newReferenceNodePath
-                            }
-                        });
-                        this.fetchNodeWithParents(newReferenceNodePath + '@' + context);
-                        this.loadingReferenceNodePathLock[preset] = false;
-                    });
-            }
-        };
-
-        fetchNodeWithParents = contextPath => {
-            // This is rather a hack. We need to make sure the target NewReferenceNode is loaded
-            // in order to be able to create anything inside it.
-            const {siteNodeContextPath} = this.props;
-            const {q} = backend.get();
-
-            let parentContextPath = contextPath;
-
-            while (parentContextPath !== siteNodeContextPath) {
-                const node = this.props.nodeData?.[parentContextPath];
-                // If the given node is not in the state, load it
-                if (!node) {
-                    q(parentContextPath).get().then(nodes => {
-                        this.props.merge(nodes.reduce((nodeMap, node) => {
-                            nodeMap[node?.contextPath] = node;
-                            return nodeMap;
-                        }, {}));
-                    });
-                }
-                parentContextPath = parentNodeContextPath(parentContextPath);
-            }
-        };
-
         render() {
             return (
                 <Tabs theme={{
@@ -249,7 +153,6 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                         const resetNodes = this.makeResetNodes(presetName, fetchNodes)
                         const debouncedFetchNodes = debounce(fetchNodes, 400);
                         const setSearchTerm = this.makeSetSearchTerm(presetName, debouncedFetchNodes)
-                        const fetchNewReference = this.makeGetNewReference(presetName)
                         return (
                             <Tabs.Panel id={presetName} key={presetName} icon={preset.icon} tooltip={this.props.i18nRegistry.translate(preset.label)} theme={{
                                 panel: style.panel
@@ -261,7 +164,6 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                                     resetNodes={resetNodes}
                                     setSearchTerm={setSearchTerm}
                                     fullReset={this.fullReset}
-                                    fetchNewReference={fetchNewReference}
                                     {...this.state[presetName]}
                                 />)}
                                 {preset.type === 'tree' && (<OriginalPageTree />)}
