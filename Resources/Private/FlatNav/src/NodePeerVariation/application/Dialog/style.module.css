@@ -1,0 +1,8 @@
+.modalContents {
+    padding: var(--spacing-Full);
+}
+
+.spinner {
+    margin-inline: auto;
+    display: block;
+}

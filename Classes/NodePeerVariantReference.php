@@ -12,7 +12,8 @@ final readonly class NodePeerVariantReference implements \JsonSerializable
     public function __construct(
         public NodeAggregateId $nodeAggregateId,
         public OriginDimensionSpacePoint $peerVariantOriginDimensionSpacePoint,
-        public string $label
+        public string $label,
+        public string $peerVariantOriginLabel,
     ) {
     }
 
@@ -21,8 +22,9 @@ final readonly class NodePeerVariantReference implements \JsonSerializable
     {
         return [
             'nodeAggregateId' => $this->nodeAggregateId,
-            'peerVariantOriginDimensionSpacePoint' => $this->peerVariantOriginDimensionSpacePoint->toLegacyDimensionArray(),
+            'peerVariantOriginDimension' => $this->peerVariantOriginDimensionSpacePoint->toLegacyDimensionArray(),
             'label' => $this->label,
+            'peerVariantOriginLabel' => $this->peerVariantOriginLabel,
         ];
     }
 }

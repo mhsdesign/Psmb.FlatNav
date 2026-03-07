@@ -56,7 +56,8 @@ export default class FlatNav extends Component {
         isLoadingReferenceNodePath: PropTypes.bool.isRequired,
         page: PropTypes.number.isRequired,
         newReferenceNodePath: PropTypes.string.isRequired,
-        moreNodesAvailable: PropTypes.bool.isRequired
+        moreNodesAvailable: PropTypes.bool.isRequired,
+        nodePeerVariationHandler: PropTypes.object.isRequired
     };
 
     componentDidMount() {
@@ -209,8 +210,16 @@ export default class FlatNav extends Component {
                         <div
                             className={nodeItemClassNames}
                             key={treeItem.nodeVariantReference.nodeAggregateId}
-                            onClick={() => {
-                                console.log('Happy birthday');
+                            onClick={async () => {
+                                const {variantWasCreated} = await this.props.nodePeerVariationHandler.transactions.start(
+                                    treeItem.nodeVariantReference.nodeAggregateId,
+                                    treeItem.nodeVariantReference.peerVariantOriginDimension,
+                                    treeItem.nodeVariantReference.label,
+                                    treeItem.nodeVariantReference.peerVariantOriginLabel,
+                                );
+                                if (variantWasCreated) {
+                                    this.refreshFlatNav();
+                                }
                             }}
                             role="button"
                         >

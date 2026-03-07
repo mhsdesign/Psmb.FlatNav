@@ -2,12 +2,18 @@ import React from 'react';
 import manifest from '@neos-project/neos-ui-extensibility';
 import makeFlatNavContainer from './makeFlatNavContainer';
 import style from './style.module.css';
+import {createNodePeerVariationHandler, registerDialog, createNodeVariantCreationNeosUiAdapter} from './NodePeerVariation';
 
-manifest('Psmb.FlatNav:FlatNav', {}, globalRegistry => {
+manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
     const containerRegistry = globalRegistry.get('containers');
     const PageTreeToolbar = containerRegistry.get('LeftSideBar/Top/PageTreeToolbar');
     const PageTreeSearchbar = containerRegistry.get('LeftSideBar/Top/PageTreeSearchbar');
     const PageTree = containerRegistry.get('LeftSideBar/Top/PageTree');
+
+    const nodePeerVariationHandler = createNodePeerVariationHandler({
+        afterVariationWasConfirmedHook: createNodeVariantCreationNeosUiAdapter(store)
+    });
+    registerDialog(globalRegistry, nodePeerVariationHandler);
 
     const OriginalTree = () => (
         <div>
@@ -21,5 +27,5 @@ manifest('Psmb.FlatNav:FlatNav', {}, globalRegistry => {
     containerRegistry.set('LeftSideBar/Top/PageTreeToolbar', () => null);
     containerRegistry.set('LeftSideBar/Top/PageTreeSearchbar', () => null);
 
-    containerRegistry.set('LeftSideBar/Top/PageTree', makeFlatNavContainer(OriginalTree));
+    containerRegistry.set('LeftSideBar/Top/PageTree', makeFlatNavContainer(OriginalTree, nodePeerVariationHandler));
 });

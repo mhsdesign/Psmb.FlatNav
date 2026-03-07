@@ -26,7 +26,7 @@ const parentNodeContextPath = contextPath => {
     return `${path.substr(0, path.lastIndexOf('/'))}@${context}`;
 };
 
-const makeFlatNavContainer = OriginalPageTree => {
+const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
     class FlatNavContainer extends Component {
         state = {};
 
@@ -255,6 +255,7 @@ const makeFlatNavContainer = OriginalPageTree => {
                                 panel: style.panel
                             }}>
                                 {preset.type === 'flat' && (<FlatNav
+                                    nodePeerVariationHandler={nodePeerVariationHandler}
                                     preset={preset}
                                     fetchNodes={fetchNodes}
                                     resetNodes={resetNodes}
