@@ -115,45 +115,33 @@ export default class FlatNav extends Component {
         this.props.resetNodes();
     }
 
-    getNodeIconComponent(node) {
-        const nodeTypeName = node?.nodeType;
-        const nodeType = this.props.nodeTypesRegistry.getNodeType(nodeTypeName);
-        const isHidden = node?.properties?._hidden;
-        const isHiddenBefore = node?.properties?._hiddenBeforeDateTime;
-        const isHiddenAfter = node?.properties?._hiddenAfterDateTime;
-        const nodeTypeIcon = nodeType?.ui?.icon;
-
-        if (isHidden) {
-            return (
-                <span className="fa-layers fa-fw">
-                    <Icon icon={nodeTypeIcon} className={style.baseIcon} />
-                    <Icon icon="circle" color="error" transform="shrink-3 down-6 right-4" />
-                    <Icon icon="times" transform="shrink-7 down-6 right-4" />
-                </span>
-            );
-        }
-
-        if (isHiddenBefore || isHiddenAfter) {
-            return (
-                <span className="fa-layers fa-fw">
-                    <Icon icon={nodeTypeIcon} className={style.baseIcon} />
-                    <Icon icon="circle" color="primaryBlue" transform="shrink-5 down-6 right-4" />
-                    <Icon icon="clock" transform="shrink-9 down-6 right-4" />
-                </span>
-            );
-        }
-
-        return (
-            <Icon icon={nodeTypeIcon} className={style.baseIcon} />
-        );
-    }
-
     renderTreeItems = () => {
         if (this.props.searchTerm && !this.props.isLoading &&  this.props.treeItems.length === 0) {
             return <span className={style.toolbarSearchNoResults}>{this.props.i18nRegistry.translate('Psmb.FlatNav:Main:noResults')}</span>
         }
+
+        const renderedDateSections = {
+            // skip current year
+            [new Date().toLocaleString(undefined, {year: "numeric"})]: true
+        };
+
         return this.props.treeItems
             .map(treeItem => {
+                let dateSections = [];
+                const date = new Date(Date.parse(treeItem.dateOrderedBy));
+                const yearLabel = date.toLocaleString(undefined, {year: "numeric"});
+                if (!renderedDateSections[yearLabel]) {
+                    renderedDateSections[yearLabel] = true;
+                    dateSections.push(<div className={style.treeItemYear}>{yearLabel}</div>);
+                }
+                const monthAndDayLabel = date.toLocaleString(undefined, {
+                    month: "short", day: "numeric",
+                });
+                if (!renderedDateSections[monthAndDayLabel + yearLabel]) {
+                    renderedDateSections[monthAndDayLabel + yearLabel] = true;
+                    dateSections.push(<div className={style.treeItemDay}>{monthAndDayLabel}</div>);
+                }
+
                 if (treeItem.occupiedNode) {
                     const treeItemContextPath = treeItem.occupiedNode.contextPath;
 
@@ -162,41 +150,41 @@ export default class FlatNav extends Component {
 
                     if (nodeData) {
                         const isFocused = this.props.focused === treeItemContextPath;
-                        const isDirty = this.props.publishableNodes.filter(i => (
+                        const isDirty = Boolean(this.props.publishableNodes.find(i => (
                             i?.contextPath === treeItemContextPath ||
                             i?.documentContextPath === treeItemContextPath
-                        )).length > 0;
-                        const isRemoved = nodeData?.properties?._removed;
-                        const nodeIconComponent = this.getNodeIconComponent(nodeData);
+                        )));
+
                         const nodeItemClassNames = mergeClassNames({
                             [style.node]: true,
                             [style.nodeFocused]: isFocused,
                             [style.nodeDirty]: isDirty,
-                            [style.nodeRemoved]: isRemoved
                         })
 
-                        return (
+                        return (<>
+                            {dateSections}
                             <div
                                 className={nodeItemClassNames}
                                 key={treeItemContextPath}
                                 onClick={() => {
-                                    if ( ! isRemoved) {
-                                        this.props.setSrc(nodeData?.uri);
-                                        this.props.focus(treeItemContextPath);
-                                    }
+                                    this.props.setSrc(nodeData?.uri);
+                                    this.props.focus(treeItemContextPath);
                                 }}
                                 role="button"
-                                >
-                                <div
-                                    className={style.nodeIconWrapper}>
-                                    {nodeIconComponent}
-                                </div>
-                                <span
-                                    className={style.nodeLabel}>
+                            >
+                                {
+                                    nodeData?.properties?._hidden ? (
+                                        <span className="fa-layers fa-fw">
+                                            <Icon icon="circle" color="error" transform="shrink-3" />
+                                            <Icon icon="times" transform="shrink-7" />
+                                        </span>
+                                    ) : null
+                                }
+                                <span className={style.nodeLabel}>
                                     {nodeData?.label}
                                 </span>
                             </div>
-                        );
+                        </>);
                     }
                 }
 
@@ -206,7 +194,8 @@ export default class FlatNav extends Component {
                         [style.nodeForeign]: true
                     })
 
-                    return (
+                    return (<>
+                        {dateSections}
                         <div
                             className={nodeItemClassNames}
                             key={treeItem.nodeVariantReference.nodeAggregateId}
@@ -223,15 +212,12 @@ export default class FlatNav extends Component {
                             }}
                             role="button"
                         >
-                            <div
-                                className={style.nodeIconWrapper}>
-                            </div>
-                            <span
-                                className={style.nodeLabel}>
-                                    {treeItem.nodeVariantReference.label}
-                                </span>
+                            <span className={style.nodeLabel}>
+                                {treeItem.nodeVariantReference.label}
+                            </span>
+                            <Icon icon="copy" />
                         </div>
-                    );
+                    </>);
                 }
 
                 return null;

@@ -90,6 +90,8 @@ class StandardController extends ActionController
                 array_values($nodeTreeItem->occupiedDimensionSpacePoints->getPoints())
             );
 
+            $item['dateOrderedBy'] = $nodeTreeItem->dateOrderedBy->format(\DateTimeInterface::W3C);
+
             $result[] = $item;
         }
         $this->view->assign('value', $result);

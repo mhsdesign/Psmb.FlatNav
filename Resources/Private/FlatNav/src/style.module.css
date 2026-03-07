@@ -73,6 +73,7 @@
     text-overflow: ellipsis;
     padding: 0.25rem 0.5rem;
     cursor: pointer;
+    align-items: center;
 
     &:hover {
         .nodeIconWrapper,
@@ -81,11 +82,6 @@
             color: var(--colors-PrimaryBlueHover);
         }
     }
-}
-
-.nodeIconWrapper {
-    width: 2em;
-    text-align: center;
 }
 
 .nodeFocused {
@@ -102,13 +98,22 @@
     cursor: not-allowed;
     border-color: var(--colors-Error);
 }
-.nodeRemoved .nodeLabel,
-.nodeRemoved .nodeIconWrapper {
-    opacity: 0.5;
+
+.nodeForeign {
+    opacity: 0.8;
+    font-style: italic;
 }
-.nodeForeign .nodeLabel,
-.nodeForeign .nodeIconWrapper {
-    opacity: 0.5;
+
+.nodeForeign:hover {
+    opacity: 1;
+
+    .nodeLabel {
+        color: white;
+    }
+
+    svg {
+        color: var(--colors-PrimaryBlue);
+    }
 }
 
 .nodeLabel {
@@ -116,4 +121,20 @@
     width: calc(100% - 2rem - 1rem);
     text-overflow: ellipsis;
     display: inline-block;
+}
+
+.treeItemYear {
+    height: auto;
+    font-size: 18px;
+    width: 100%;
+    padding: 0.25rem 1rem;
+    text-align: center;
+}
+
+.treeItemDay {
+    height: auto;
+    font-size: 16px;
+    opacity: 0.8;
+    width: 100%;
+    padding: 0.25rem 0.8rem;
 }

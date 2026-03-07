@@ -13,7 +13,8 @@ final readonly class TreeItem
 {
     public function __construct(
         public Node|NodePeerVariantReference $node,
-        public OriginDimensionSpacePointSet $occupiedDimensionSpacePoints
+        public OriginDimensionSpacePointSet $occupiedDimensionSpacePoints,
+        public \DateTimeImmutable $dateOrderedBy,
     ) {
     }
 }
