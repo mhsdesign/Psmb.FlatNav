@@ -194,6 +194,58 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@psmb/flatnav-plugin@workspace:*, @psmb/flatnav-plugin@workspace:Resources/Private/FlatNav":
+  version: 0.0.0-use.local
+  resolution: "@psmb/flatnav-plugin@workspace:Resources/Private/FlatNav"
+  dependencies:
+    "@neos-project/neos-ui-extensibility": ~9.1.4
+    esbuild: ~0.27.0
+    typesafe-actions: ~5.1.0
+  languageName: unknown
+  linkType: soft
+
+"@psmb/flatnav@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@psmb/flatnav@workspace:."
+  dependencies:
+    "@psmb/flatnav-plugin": "workspace:*"
+    "@types/react": ^17.0.3
+    esbuild: ~0.27.0
+  languageName: unknown
+  linkType: soft
+
+"@types/prop-types@npm:*":
+  version: 15.7.15
+  resolution: "@types/prop-types@npm:15.7.15"
+  checksum: 31aa2f59b28f24da6fb4f1d70807dae2aedfce090ec63eaf9ea01727a9533ef6eaf017de5bff99fbccad7d1c9e644f52c6c2ba30869465dd22b1a7221c29f356
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:^17.0.3":
+  version: 17.0.91
+  resolution: "@types/react@npm:17.0.91"
+  dependencies:
+    "@types/prop-types": "*"
+    "@types/scheduler": ^0.16
+    csstype: ^3.2.2
+  checksum: 2cc4cb20ef25cd09e65ac01d6b64b51c4a8f52cc55e77a1893eaedfaac5b2d0ef241e2a34cfe19b5462b5647d355b74f5df1ea113c75ed3db6ecde6b8376a37b
+  languageName: node
+  linkType: hard
+
+"@types/scheduler@npm:^0.16":
+  version: 0.16.8
+  resolution: "@types/scheduler@npm:0.16.8"
+  checksum: 6c091b096daa490093bf30dd7947cd28e5b2cd612ec93448432b33f724b162587fed9309a0acc104d97b69b1d49a0f3fc755a62282054d62975d53d7fd13472d
+  languageName: node
+  linkType: hard
+
+"csstype@npm:^3.2.2":
+  version: 3.2.3
+  resolution: "csstype@npm:3.2.3"
+  checksum: cb882521b3398958a1ce6ca98c011aec0bde1c77ecaf8a1dd4db3b112a189939beae3b1308243b2fe50fc27eb3edeb0f73a5a4d91d928765dc6d5ecc7bda92ee
+  languageName: node
+  linkType: hard
+
 "esbuild@npm:~0.27.0":
   version: 0.27.3
   resolution: "esbuild@npm:0.27.3"
@@ -282,16 +334,6 @@ __metadata:
   checksum: 3a45334b00ca235ad96843738c4698970aacde92058aee28ab1fa57ad823c29667070af90b6071cc876e492bebdeed79f593a273c39b419097afd2a772296085
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@neos-project/neos-ui-extensibility": ~9.1.4
-    esbuild: ~0.27.0
-    typesafe-actions: ~5.1.0
-  languageName: unknown
-  linkType: soft
 
 "typesafe-actions@npm:~5.1.0":
   version: 5.1.0
