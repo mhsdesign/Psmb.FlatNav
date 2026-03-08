@@ -71,7 +71,7 @@
     width: 100%;
     white-space: nowrap;
     text-overflow: ellipsis;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 1rem;
     cursor: pointer;
     align-items: center;
 
@@ -92,7 +92,6 @@
 }
 .nodeDirty {
     border-left: 2px solid var(--colors-Warn);
-    padding-left: 4px;
 }
 .nodeRemoved {
     cursor: not-allowed;
@@ -118,7 +117,7 @@
 
 .nodeLabel {
     overflow-x: hidden;
-    width: calc(100% - 2rem - 1rem);
+    width: 100%;
     text-overflow: ellipsis;
     display: inline-block;
 }
@@ -127,7 +126,7 @@
     height: auto;
     font-size: 18px;
     width: 100%;
-    padding: 0.25rem 1rem;
+    padding: 1.6rem 1rem;
     text-align: center;
 }
 
@@ -136,5 +135,5 @@
     font-size: 16px;
     opacity: 0.8;
     width: 100%;
-    padding: 0.25rem 0.8rem;
+    padding: 0.8rem 1rem;
 }
