@@ -2,9 +2,9 @@
 
 namespace Psmb\FlatNav;
 
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 
 interface NodeTreeProviderInterface
 {
-    public function provideItems(Node $parentNode, int $page, ?string $searchTerm): TreeItemSet;
+    public function provideItems(NodeAddress $siteNodeAddress, int $page, ?string $searchTerm): TreeItemSet;
 }

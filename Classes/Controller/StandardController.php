@@ -39,17 +39,13 @@ class StandardController extends ActionController
             throw new \Exception('Invalid preset name');
         }
 
-        $nodeAddress = NodeAddress::fromJsonString($nodeContextPath);
-        $contentRepository = $this->contentRepositoryRegistry->get($nodeAddress->contentRepositoryId);
-        $subgraph = $contentRepository->getContentSubgraph($nodeAddress->workspaceName, $nodeAddress->dimensionSpacePoint);
-
-        $baseNode = $subgraph->findNodeById($nodeAddress->aggregateId);
+        $siteNodeAddress = NodeAddress::fromJsonString($nodeContextPath);
 
         /** @var class-string<NodeTreeProviderInterface> $nodeTreeProviderClassName */
         $nodeTreeProviderClassName = $this->presets[$preset]['nodeTreeProviderClassName'];
         /** @var NodeTreeProviderInterface $nodeTreeProvider */
         $nodeTreeProvider = $this->objectManager->get($nodeTreeProviderClassName);
-        $nodeTreeItems = $nodeTreeProvider->provideItems($baseNode, $page, $searchTerm);
+        $nodeTreeItems = $nodeTreeProvider->provideItems($siteNodeAddress, $page, $searchTerm);
 
         $nodeInfoHelper = new NodeInfoHelper();
         $result = [];
