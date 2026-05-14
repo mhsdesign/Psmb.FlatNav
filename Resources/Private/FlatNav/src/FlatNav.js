@@ -10,9 +10,10 @@ import mergeClassNames from 'classnames';
 import style from './style.module.css';
 import RefreshNodes from "./RefreshNodes";
 import SearchInput from "./SearchInput";
+import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals';
+
 @neos(globalRegistry => ({
     nodeTypesRegistry: globalRegistry.get('@neos-project/neos-ui-contentrepository'),
-    serverFeedbackHandlers: globalRegistry.get('serverFeedbackHandlers'),
     i18nRegistry: globalRegistry.get('i18n')
 }))
 @connect(
@@ -59,6 +60,8 @@ export default class FlatNav extends Component {
         nodePeerVariationHandler: PropTypes.object.isRequired
     };
 
+    subscription
+
     componentDidMount() {
         if (
             // No node paths in state on initial load
@@ -66,8 +69,25 @@ export default class FlatNav extends Component {
         ) {
             this.props.fetchNodes();
         }
-        // TODO hacky and not cleaned up
-        this.props.serverFeedbackHandlers.set('Neos.Neos.Ui:NodeCreated/DocumentAdded', this.handleNodeWasCreated, 'after Neos.Neos.Ui:NodeCreated/Main');
+
+        this.subscription = signals$.subscribe({
+            next: (action) => {
+                if (action instanceof NodeWasCreated) {
+                    if (action.nodeTypeName === this.props.preset.newNodeType) {
+                        this.refreshFlatNav();
+                    }
+                }
+                if (action instanceof DimensionSpacePointWasChanged) {
+                    this.refreshFlatNav();
+                }
+            }
+        })
+    }
+
+    componentWillUnmount() {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
     }
 
     componentDidUpdate() {
@@ -76,18 +96,6 @@ export default class FlatNav extends Component {
             !this.props.treeItems.filter(treeItem => treeItem.occupiedNode).every(treeItem => this.props.nodeData?.[treeItem.occupiedNode.contextPath])
         ) {
             this.props.fetchNodes();
-        }
-    }
-
-    handleNodeWasCreated = (feedbackPayload, {store}) => {
-        const state = store.getState();
-
-        const getNodeByContextPathSelector = selectors.CR.Nodes.makeGetNodeByContextPathSelector(feedbackPayload.contextPath);
-        const node = getNodeByContextPathSelector(state);
-        const nodeTypeName = node?.nodeType;
-
-        if (nodeTypeName === this.props.preset.newNodeType) {
-            this.refreshFlatNav();
         }
     }
 
