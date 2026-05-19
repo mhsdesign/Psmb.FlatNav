@@ -75,6 +75,8 @@ export default class FlatNav extends Component {
                 if (action instanceof NodeWasCreated) {
                     if (action.nodeTypeName === this.props.preset.newNodeType) {
                         this.refreshFlatNav();
+                    } else if (action.parentNodeAggregateId === this.props.preset.parentNodeAggregateId) {
+                        this.refreshFlatNav();
                     }
                 }
                 if (action instanceof DimensionSpacePointWasChanged) {

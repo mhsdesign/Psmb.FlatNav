@@ -4,7 +4,7 @@ import makeFlatNavContainer from './makeFlatNavContainer';
 import style from './style.module.css';
 import {createNodePeerVariationHandler, registerDialog, createNodeVariantCreationNeosUiAdapter} from './NodePeerVariation';
 import {takeLatest} from 'redux-saga/effects';
-import {actionTypes} from '@neos-project/neos-ui-redux-store';
+import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
 import {changeDimensionSpacePoint, createNode} from './signals';
 
 manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
@@ -34,19 +34,32 @@ manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
 
     const sagasRegistry = globalRegistry.get('sagas');
     sagasRegistry.set('Psmb.FlatNav/convertSignals', {saga: convertSignals});
+
+    const serverFeedbackHandlers = globalRegistry.get('serverFeedbackHandlers');
+
+    serverFeedbackHandlers.set('Neos.Neos.Ui:NodeCreated/FlatNav', (feedbackPayload) => {
+        const state = store.getState();
+
+        const getNodeByContextPathSelector = selectors.CR.Nodes.makeGetNodeByContextPathSelector(feedbackPayload.contextPath);
+        const newNode = getNodeByContextPathSelector(state);
+
+        const {aggregateId: parentNodeAggregateId} = JSON.parse(newNode.parent);
+
+        /**
+         * only _after_ the node was created on the server we can reload the tree
+         * watching actionTypes.CR.Nodes.MERGE, actionTypes.CR.Nodes.ADD, actionTypes.CR.Nodes.SET_STATE is not sufficient as these are optimistic updates.
+         */
+        createNode(
+            newNode.nodeType,
+            parentNodeAggregateId
+        );
+    }, 'after Neos.Neos.Ui:NodeCreated/Main');
 });
 
 function* convertSignals() {
     let lastSerializedDimensionSpacePoint = null;
 
     yield takeLatest([actionTypes.CR.ContentDimensions.SET_ACTIVE, actionTypes.Changes.PERSIST], function* (action) {
-        if (action.type === actionTypes.Changes.PERSIST) {
-            const newNodesOfNodeTypes = new Set(Object.values(action.payload.changes).filter(change => change.type.startsWith("Neos.Neos.Ui:Create")).map(change => change.payload.nodeType));
-            for (const newNodesOfNodeType of newNodesOfNodeTypes) {
-                createNode(newNodesOfNodeType);
-            }
-        }
-
         if (action.type === actionTypes.CR.ContentDimensions.SET_ACTIVE) {
             const newSerializedDimensionSpacePoint = JSON.stringify(action.payload.dimensionValues);
             if (lastSerializedDimensionSpacePoint !== newSerializedDimensionSpacePoint) {
