@@ -19,7 +19,7 @@ manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
     registerDialog(globalRegistry, nodePeerVariationHandler);
 
     const OriginalTree = () => (
-        <div>
+        <div className={style.pageTreeContainerOriginal}>
             <div className={style.pageTreeToolbarOriginal}>
                 <PageTreeToolbar/>
             </div>

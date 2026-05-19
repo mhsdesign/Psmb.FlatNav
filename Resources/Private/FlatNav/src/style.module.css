@@ -65,6 +65,13 @@
     border-top: 0;
 }
 
+.pageTreeContainerOriginal {
+    flex-direction: column;
+    flex: 0 auto;
+    display: flex;
+    height: 100%;
+}
+
 .node {
     display: flex;
     overflow: hidden;
