@@ -7,7 +7,8 @@ export const VariationWasStarted = createAction(
         peerVariantOriginDimension: any,
         label: string,
         peerVariantOriginLabel: string,
-    ) => ({nodeAggregateId, label, peerVariantOriginLabel, peerVariantOriginDimension})
+        peerVariantOriginPreviewUri: string,
+    ) => ({nodeAggregateId, label, peerVariantOriginLabel, peerVariantOriginDimension, peerVariantOriginPreviewUri})
 )();
 
 export const VariationWasConfirmed = createAction(

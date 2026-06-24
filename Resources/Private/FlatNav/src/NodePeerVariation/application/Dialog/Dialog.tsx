@@ -33,13 +33,13 @@ const NodePeerVariation: React.FC<{
         return null;
     }
 
-    let body = null;
+    let description = null;
     if (state.isLoading) {
-        body = <Icon className={style.spinner} icon="spinner" spin={true} size="2x" />
+        description = <Icon className={style.spinner} icon="spinner" spin={true} size="2x" />
     } else if (state.isFinished) {
-        body = <>Kopie "{state.nodePeerVariantReference.label}" wurde erstellt.</>
+        description = <>Kopie "{state.nodePeerVariantReference.label}" wurde erstellt.</>
     } else {
-        body = <>Möchten sie "{state.nodePeerVariantReference.label}" von "{state.nodePeerVariantReference.peerVariantOriginLabel}" kopieren?</>
+        description = <>Möchten sie "{state.nodePeerVariantReference.label}" von "{state.nodePeerVariantReference.peerVariantOriginLabel}" kopieren?</>
     }
 
     return (
@@ -77,7 +77,10 @@ const NodePeerVariation: React.FC<{
                 )
             ]}
         >
-            <div className={style.modalContents}>{body}</div>
+            <div className={style.modalContents}>
+                <iframe className={style.modalIframe} src={state.nodePeerVariantReference.peerVariantOriginPreviewUri}></iframe>
+            </div>
+            <div className={style.modalDescription}>{description}</div>
         </Dialog>
     )
 }

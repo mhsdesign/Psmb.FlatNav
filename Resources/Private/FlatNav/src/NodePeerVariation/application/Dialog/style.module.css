@@ -1,5 +1,19 @@
 .modalContents {
     padding: var(--spacing-Full);
+    width: 80vw;
+    max-width: 1200px;
+    height: calc(80vh - 190px);;
+}
+
+.modalIframe {
+    height: 100%;
+    width: 100%;
+}
+
+.modalDescription {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
 }
 
 .spinner {

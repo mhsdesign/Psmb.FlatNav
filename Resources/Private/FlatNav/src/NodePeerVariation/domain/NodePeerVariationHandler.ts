@@ -18,6 +18,7 @@ export type INodePeerVariationState =
             peerVariantOriginDimension: any,
             label: string,
             peerVariantOriginLabel: string,
+            peerVariantOriginPreviewUri: string,
         }
     }
 ;
@@ -91,6 +92,7 @@ export function createNodePeerVariationHandler(hooks: {afterVariationWasConfirme
         peerVariantOriginDimension: any,
         label: string,
         peerVariantOriginLabel: string,
+        peerVariantOriginPreviewUri: string,
     ) => new Promise<INodePeerVariationResult>(
         resolve => {
             dispatch(
@@ -99,6 +101,7 @@ export function createNodePeerVariationHandler(hooks: {afterVariationWasConfirme
                     peerVariantOriginDimension,
                     label,
                     peerVariantOriginLabel,
+                    peerVariantOriginPreviewUri,
                 )
             );
 

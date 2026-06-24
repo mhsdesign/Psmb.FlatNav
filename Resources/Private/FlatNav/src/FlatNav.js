@@ -207,6 +207,7 @@ export default class FlatNav extends Component {
                                     treeItem.nodeVariantReference.peerVariantOriginDimension,
                                     treeItem.nodeVariantReference.label,
                                     treeItem.nodeVariantReference.peerVariantOriginLabel,
+                                    treeItem.nodeVariantReference.peerVariantOriginPreviewUri,
                                 );
                                 if (variantWasCreated) {
                                     this.refreshFlatNav();

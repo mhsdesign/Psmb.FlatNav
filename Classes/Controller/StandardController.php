@@ -8,6 +8,7 @@ use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
 use Neos\Neos\Ui\Fusion\Helper\NodeInfoHelper;
 use Psmb\FlatNav\NodePeerVariantReference;
 use Psmb\FlatNav\NodeTreeProviderInterface;
@@ -28,6 +29,12 @@ class StandardController extends ActionController
     protected $contentRepositoryRegistry;
 
     /**
+     * @Flow\Inject
+     * @var NodeUriBuilderFactory
+     */
+    protected $nodeUriBuilderFactory;
+
+    /**
      * @param string $preset The preset, configured in Settings.yaml
      * @param string $nodeContextPath The node address of the site
      * @param integer $page Page parameter used for pagination
@@ -38,6 +45,8 @@ class StandardController extends ActionController
         if (!isset($this->presets[$preset])) {
             throw new \Exception('Invalid preset name');
         }
+
+        $nodeUriBuilder = $this->nodeUriBuilderFactory->forActionRequest($this->request);
 
         $siteNodeAddress = NodeAddress::fromJsonString($nodeContextPath);
 
@@ -56,7 +65,16 @@ class StandardController extends ActionController
                 $item['occupiedNode'] = $serializedNode;
             }
             if ($nodeTreeItem->node instanceof NodePeerVariantReference) {
-                $item['nodeVariantReference'] = $nodeTreeItem->node->jsonSerialize();
+                $item['nodeVariantReference'] = $nodeTreeItem->node->toArrayWithPeerVariantOriginPreviewUri(
+                    $nodeUriBuilder->previewUriFor(
+                        NodeAddress::create(
+                            $siteNodeAddress->contentRepositoryId,
+                            $siteNodeAddress->workspaceName,
+                            $nodeTreeItem->node->peerVariantOriginDimensionSpacePoint->toDimensionSpacePoint(),
+                            $nodeTreeItem->node->nodeAggregateId
+                        )
+                    )
+                );
             }
 
             $item['occupiedDimensions'] = array_map(
