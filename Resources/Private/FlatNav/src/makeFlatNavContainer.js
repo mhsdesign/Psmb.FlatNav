@@ -38,6 +38,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                     isLoading: false,
                     treeItems: [],
                     searchTerm: '',
+                    includePeerVariants: true,
                     moreNodesAvailable: true
                 };
             });
@@ -64,8 +65,24 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
 
         makeFetchNodes = preset => (loadMore = false) => {
             const searchTerm = this.state[preset].searchTerm;
+            const includePeerVariants = this.state[preset].includePeerVariants;
             const page = loadMore ? this.state[preset].page + 1 : 1
-            const url = `/neos/flatnav/query?nodeContextPath=${encodeURIComponent(this.props.siteNodeContextPath)}&preset=${preset}&page=${page}${searchTerm ? `&searchTerm=${searchTerm}` : ''}`
+
+            const params = new URLSearchParams({
+                'nodeContextPath': this.props.siteNodeContextPath,
+                'preset': preset,
+                'page': page,
+            });
+
+            if (searchTerm) {
+                params.set('searchTerm', searchTerm);
+            }
+
+            if (includePeerVariants) {
+                params.set('includePeerVariants', '1');
+            }
+
+            const url = `/neos/flatnav/query?${params.toString()}`
             if (this.loadingLock[url]) {
                 return;
             }
@@ -90,7 +107,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                 .then(response => response && response.json())
                 .then(treeItems => {
                     // Ignore the response if the searchTerm has changed while request was running
-                    if (searchTerm === this.state[preset].searchTerm) {
+                    if (searchTerm === this.state[preset].searchTerm && includePeerVariants === this.state[preset].includePeerVariants) {
                         if (treeItems.length > 0) {
                             const nodesMap = treeItems.reduce((result, treeItem) => {
                                 if (treeItem.occupiedNode) {
@@ -135,6 +152,18 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
             }, fetchNodes);
         }
 
+        makeToggleIncludePeerVariants = (preset, fetchNodes) => () => {
+            this.setState((prev) => ({
+                [preset]: {
+                    ...prev[preset],
+                    treeItems: [],
+                    page: 1,
+                    isLoading: true,
+                    includePeerVariants: !prev[preset].includePeerVariants
+                }
+            }), fetchNodes);
+        }
+
         render() {
             return (
                 <Tabs theme={{
@@ -153,6 +182,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                         const resetNodes = this.makeResetNodes(presetName, fetchNodes)
                         const debouncedFetchNodes = debounce(fetchNodes, 400);
                         const setSearchTerm = this.makeSetSearchTerm(presetName, debouncedFetchNodes)
+                        const toggleIncludePeerVariants = this.makeToggleIncludePeerVariants(presetName, debouncedFetchNodes)
                         return (
                             <Tabs.Panel id={presetName} key={presetName} icon={preset.icon} tooltip={this.props.i18nRegistry.translate(preset.label)} theme={{
                                 panel: style.panel
@@ -163,6 +193,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                                     fetchNodes={fetchNodes}
                                     resetNodes={resetNodes}
                                     setSearchTerm={setSearchTerm}
+                                    toggleIncludePeerVariants={toggleIncludePeerVariants}
                                     fullReset={this.fullReset}
                                     {...this.state[presetName]}
                                 />)}

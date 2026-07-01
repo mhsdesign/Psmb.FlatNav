@@ -215,10 +215,10 @@ export default class FlatNav extends Component {
                             }}
                             role="button"
                         >
+                            <Icon icon="copy" />
                             <span className={style.nodeLabel}>
                                 {treeItem.nodeVariantReference.label}
                             </span>
-                            <Icon icon="copy" />
                         </div>
                     </>);
                 }
@@ -242,6 +242,7 @@ export default class FlatNav extends Component {
                         <HideSelectedNode disabled={!focusedInTreeItems || !canBeEdited}/>
                         <DeleteSelectedNode disabled={!focusedInTreeItems || !canBeDeleted || !canBeEdited}/>
                         <RefreshNodes disabled={isLoading} onClick={this.refreshFlatNav}/>
+                        <IconButton icon="filter" isActive={!this.props.includePeerVariants} onClick={this.props.toggleIncludePeerVariants}/>
                     </div>
                     {searchEnabled && <SearchInput searchTerm={this.props.searchTerm} onChange={this.props.setSearchTerm} placeholder={this.props.i18nRegistry.translate('Psmb.FlatNav:Main:search')}/>}
                 </div>

@@ -40,7 +40,7 @@ class StandardController extends ActionController
      * @param integer $page Page parameter used for pagination
      * @param string $searchTerm Search term
      */
-    public function queryAction($preset, $nodeContextPath, $page = 1, $searchTerm = null): ResponseInterface
+    public function queryAction($preset, $nodeContextPath, $page = 1, $searchTerm = null, bool $includePeerVariants = false): ResponseInterface
     {
         if (!isset($this->presets[$preset])) {
             throw new \Exception('Invalid preset name');
@@ -54,7 +54,7 @@ class StandardController extends ActionController
         $nodeTreeProviderClassName = $this->presets[$preset]['nodeTreeProviderClassName'];
         /** @var NodeTreeProviderInterface $nodeTreeProvider */
         $nodeTreeProvider = $this->objectManager->get($nodeTreeProviderClassName);
-        $nodeTreeItems = $nodeTreeProvider->provideItems($siteNodeAddress, $page, $searchTerm);
+        $nodeTreeItems = $nodeTreeProvider->provideItems($siteNodeAddress, $page, $searchTerm, $includePeerVariants);
 
         $nodeInfoHelper = new NodeInfoHelper();
         $result = [];
