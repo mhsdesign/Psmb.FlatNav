@@ -108,10 +108,17 @@
 .nodeForeign {
     opacity: 0.8;
     font-style: italic;
+    text-decoration: underline;
+}
+
+.nodeForeign svg {
+    margin-right: 7px;
+    margin-left: 3px;
 }
 
 .nodeForeign:hover {
     opacity: 1;
+    text-decoration: underline;
 
     .nodeLabel {
         color: white;
@@ -135,12 +142,13 @@
     width: 100%;
     padding: 1.6rem 1rem;
     text-align: center;
+    font-weight: bold;
 }
 
 .treeItemDay {
     height: auto;
     font-size: 16px;
-    opacity: 0.8;
     width: 100%;
     padding: 0.8rem 1rem;
+    font-weight: bold;
 }

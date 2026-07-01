@@ -72,15 +72,26 @@ const NodePeerVariation: React.FC<{
                         disabled={state.isLoading}
                         onClick={confirm}
                     >
-                        {translate('Todo:todo:todo', 'Bestätigen')}
+                        {translate('Todo:todo:todo', 'Kopieren')}
                     </Button>
                 )
             ]}
         >
             <div className={style.modalContents}>
-                <iframe className={style.modalIframe} src={state.nodePeerVariantReference.peerVariantOriginPreviewUri}></iframe>
+                {state.isLoading ? (
+                    <Icon className={style.spinner} icon="spinner" spin={true} size="2x" />
+                ) : state.isFinished ? (
+                    <div>Kopie "{state.nodePeerVariantReference.label}" wurde erstellt.</div>
+                ) : (
+                    <iframe className={style.modalIframe} src={state.nodePeerVariantReference.peerVariantOriginPreviewUri}></iframe>
+                )}
             </div>
-            <div className={style.modalDescription}>{description}</div>
+
+
+            {!state.isLoading && !state.isFinished ? (
+                <div className={style.copyDescriptionCorner}>Möchten sie "{state.nodePeerVariantReference.label}" von "{state.nodePeerVariantReference.peerVariantOriginLabel}" kopieren?</div>
+            ) : ''}
+
         </Dialog>
     )
 }
