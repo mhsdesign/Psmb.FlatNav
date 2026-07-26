@@ -7,15 +7,11 @@ import {takeLatest} from 'redux-saga/effects';
 import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
 import {changeDimensionSpacePoint, createNode} from './signals';
 
-manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store, frontendConfiguration}) => {
+manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
     const containerRegistry = globalRegistry.get('containers');
     const PageTreeToolbar = containerRegistry.get('LeftSideBar/Top/PageTreeToolbar');
     const PageTreeSearchbar = containerRegistry.get('LeftSideBar/Top/PageTreeSearchbar');
     const PageTree = containerRegistry.get('LeftSideBar/Top/PageTree');
-
-    if (frontendConfiguration?.Psmb_FlatNav?.disableDimensionSwitcher ?? null) {
-        containerRegistry.set('PrimaryToolbar/Right/DimensionSwitcher', () => null);
-    }
 
     const nodePeerVariationHandler = createNodePeerVariationHandler({
         afterVariationWasConfirmedHook: createNodeVariantCreationNeosUiAdapter(store)
