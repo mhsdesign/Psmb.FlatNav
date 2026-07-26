@@ -187,7 +187,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                             <Tabs.Panel id={presetName} key={presetName} icon={preset.icon} tooltip={this.props.i18nRegistry.translate(preset.label)} theme={{
                                 panel: style.panel
                             }}>
-                                {preset.type === 'flat' && (<FlatNav
+                                {(preset.type === 'flat' || preset.type === 'flat_date') && (<FlatNav
                                     nodePeerVariationHandler={nodePeerVariationHandler}
                                     preset={preset}
                                     fetchNodes={fetchNodes}

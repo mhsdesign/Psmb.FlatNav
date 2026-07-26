@@ -117,9 +117,64 @@ export default class FlatNav extends Component {
         this.props.resetNodes();
     }
 
+    renderNodeData = (nodeData) => {
+        const isFocused = this.props.focused === nodeData.contextPath;
+        const isDirty = Boolean(this.props.publishableNodes.find(i => (
+            i?.contextPath === nodeData.contextPath ||
+            i?.documentContextPath === nodeData.contextPath
+        )));
+
+        const nodeItemClassNames = mergeClassNames({
+            [style.node]: true,
+            [style.nodeFocused]: isFocused,
+            [style.nodeDirty]: isDirty,
+        })
+
+        return (
+            <div
+                className={nodeItemClassNames}
+                key={nodeData.contextPath}
+                onClick={() => {
+                    this.props.setSrc(nodeData?.uri);
+                    this.props.focus(nodeData.contextPath);
+                }}
+                role="button"
+            >
+                {
+                    nodeData?.properties?._hidden ? (
+                        <span className="fa-layers fa-fw">
+                            <Icon icon="circle" color="error" transform="shrink-3" />
+                            <Icon icon="times" transform="shrink-7" />
+                        </span>
+                    ) : null
+                }
+                <span className={style.nodeLabel}>
+                    {nodeData?.label}
+                </span>
+            </div>
+        );
+    }
+
     renderTreeItems = () => {
         if (this.props.searchTerm && !this.props.isLoading &&  this.props.treeItems.length === 0) {
             return <span className={style.toolbarSearchNoResults}>{this.props.i18nRegistry.translate('Psmb.FlatNav:Main:noResults')}</span>
+        }
+
+        if (this.props.preset.type === 'flat') {
+            return this.props.treeItems
+                .map(treeItem => {
+                    if (treeItem.occupiedNode) {
+                        const treeItemContextPath = treeItem.occupiedNode.contextPath;
+
+                        // use latest state from nodeData instead of node from query
+                        const nodeData = this.props.nodeData?.[treeItemContextPath];
+
+                        if (nodeData) {
+                            return this.renderNodeData(nodeData);
+                        }
+                    }
+                    return null;
+                }).filter(i => i);
         }
 
         const renderedDateSections = {
@@ -151,42 +206,10 @@ export default class FlatNav extends Component {
                     const nodeData = this.props.nodeData?.[treeItemContextPath];
 
                     if (nodeData) {
-                        const isFocused = this.props.focused === treeItemContextPath;
-                        const isDirty = Boolean(this.props.publishableNodes.find(i => (
-                            i?.contextPath === treeItemContextPath ||
-                            i?.documentContextPath === treeItemContextPath
-                        )));
-
-                        const nodeItemClassNames = mergeClassNames({
-                            [style.node]: true,
-                            [style.nodeFocused]: isFocused,
-                            [style.nodeDirty]: isDirty,
-                        })
-
-                        return (<>
+                        return <>
                             {dateSections}
-                            <div
-                                className={nodeItemClassNames}
-                                key={treeItemContextPath}
-                                onClick={() => {
-                                    this.props.setSrc(nodeData?.uri);
-                                    this.props.focus(treeItemContextPath);
-                                }}
-                                role="button"
-                            >
-                                {
-                                    nodeData?.properties?._hidden ? (
-                                        <span className="fa-layers fa-fw">
-                                            <Icon icon="circle" color="error" transform="shrink-3" />
-                                            <Icon icon="times" transform="shrink-7" />
-                                        </span>
-                                    ) : null
-                                }
-                                <span className={style.nodeLabel}>
-                                    {nodeData?.label}
-                                </span>
-                            </div>
-                        </>);
+                            {this.renderNodeData(nodeData)}
+                        </>;
                     }
                 }
 
