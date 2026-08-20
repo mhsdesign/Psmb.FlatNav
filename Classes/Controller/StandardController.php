@@ -3,8 +3,10 @@ namespace Psmb\FlatNav\Controller;
 
 use GuzzleHttp\Psr7\Response;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
@@ -12,6 +14,8 @@ use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
 use Neos\Neos\Ui\Fusion\Helper\NodeInfoHelper;
 use Psmb\FlatNav\NodePeerVariantReference;
 use Psmb\FlatNav\NodeTreeProviderInterface;
+use Psmb\FlatNav\NodeTreeQuery;
+use Psmb\FlatNav\Preset;
 use Psr\Http\Message\ResponseInterface;
 
 class StandardController extends ActionController
@@ -46,15 +50,28 @@ class StandardController extends ActionController
             throw new \Exception('Invalid preset name');
         }
 
+        $presetConfiguration = $this->presets[$preset];
+
         $nodeUriBuilder = $this->nodeUriBuilderFactory->forActionRequest($this->request);
 
         $siteNodeAddress = NodeAddress::fromJsonString($nodeContextPath);
 
         /** @var class-string<NodeTreeProviderInterface> $nodeTreeProviderClassName */
-        $nodeTreeProviderClassName = $this->presets[$preset]['nodeTreeProviderClassName'];
+        $nodeTreeProviderClassName = $presetConfiguration['nodeTreeProviderClassName'];
         /** @var NodeTreeProviderInterface $nodeTreeProvider */
         $nodeTreeProvider = $this->objectManager->get($nodeTreeProviderClassName);
-        $nodeTreeItems = $nodeTreeProvider->provideItems($siteNodeAddress, $page, $searchTerm, $includePeerVariants);
+        $nodeTreeItems = $nodeTreeProvider->provideItems(
+            new NodeTreeQuery(
+                siteNodeAddress: $siteNodeAddress,
+                page: $page,
+                searchTerm: $searchTerm,
+                includePeerVariants: $includePeerVariants,
+                preset: new Preset(
+                    parentNodeAggregateId: NodeAggregateId::fromString($presetConfiguration['parentNodeAggregateId']),
+                    newNodeTypeName: isset($presetConfiguration['newNodeType']) ? NodeTypeName::fromString($presetConfiguration['newNodeType']) : null,
+                )
+            )
+        );
 
         $nodeInfoHelper = new NodeInfoHelper();
         $result = [];
