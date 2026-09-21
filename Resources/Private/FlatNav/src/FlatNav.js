@@ -11,8 +11,7 @@ import style from './style.module.css';
 import RefreshNodes from './RefreshNodes';
 import SearchInput from './SearchInput';
 import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals';
-import {NodeAddress} from './nodeAddress';
-import {ParentNodeLoader} from './ParentNodeLoader';
+import {NavigationRootItem} from './NavigationRootItem';
 import {NodeTreeItem} from './NodeTreeItem';
 
 @neos(globalRegistry => ({
@@ -57,12 +56,11 @@ export default class FlatNav extends Component {
         isLoading: PropTypes.bool.isRequired,
         page: PropTypes.number.isRequired,
         moreNodesAvailable: PropTypes.bool.isRequired,
-        nodePeerVariationHandler: PropTypes.object.isRequired
+        nodePeerVariationHandler: PropTypes.object.isRequired,
+        navigationRootNodeAddress: PropTypes.object.isRequired
     };
 
     subscription
-
-    parentNodeAddress
 
     componentDidMount() {
         if (
@@ -103,18 +101,8 @@ export default class FlatNav extends Component {
         }
     }
 
-    getParentNodeAddress = () => {
-        return this.parentNodeAddress ??= (() => {
-            const siteNodeAddress = NodeAddress.fromJsonString(this.props.siteNodeContextPath);
-
-            return this.props.preset.parentNodeAggregateId
-                ? siteNodeAddress.withAggregateId(this.props.preset.parentNodeAggregateId)
-                : siteNodeAddress
-        })();
-    }
-
     createNode = () => {
-        const parentNodeAddress = this.getParentNodeAddress();
+        const parentNodeAddress = this.props.navigationRootNodeAddress;
 
         this.props.commenceNodeCreation(parentNodeAddress.toJson(), undefined, 'into', this.props.preset.newNodeType || undefined);
     }
@@ -238,7 +226,7 @@ export default class FlatNav extends Component {
                     {searchEnabled && <SearchInput searchTerm={this.props.searchTerm} onChange={this.props.setSearchTerm} placeholder={this.props.i18nRegistry.translate('Psmb.FlatNav:Main:search')}/>}
                 </div>
 
-                <ParentNodeLoader nodeAddress={this.getParentNodeAddress()} />
+                <NavigationRootItem nodeAddress={this.props.navigationRootNodeAddress} />
 
                 <div className={style.treeWrapper}>
                     {this.renderTreeItems()}

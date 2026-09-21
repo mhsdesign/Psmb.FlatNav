@@ -3,15 +3,14 @@ namespace Psmb\FlatNav\Controller;
 
 use GuzzleHttp\Psr7\Response;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
-use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
-use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
 use Neos\Neos\Ui\Fusion\Helper\NodeInfoHelper;
+use Psmb\FlatNav\FastNodeInfoHelper;
 use Psmb\FlatNav\NodePeerVariantReference;
 use Psmb\FlatNav\NodeTreeProviderInterface;
 use Psmb\FlatNav\NodeTreeQuery;
@@ -66,10 +65,7 @@ class StandardController extends ActionController
                 page: $page,
                 searchTerm: $searchTerm,
                 includePeerVariants: $includePeerVariants,
-                preset: new Preset(
-                    parentNodeAggregateId: NodeAggregateId::fromString($presetConfiguration['parentNodeAggregateId']),
-                    newNodeTypeName: isset($presetConfiguration['newNodeType']) ? NodeTypeName::fromString($presetConfiguration['newNodeType']) : null,
-                )
+                preset: Preset::fromArray($presetConfiguration)
             )
         );
 
@@ -107,6 +103,46 @@ class StandardController extends ActionController
         return new Response(
             headers: ['Content-Type' => 'application/json'],
             body: json_encode($result)
+        );
+    }
+
+    public function availableNavigationRootNodesAction(string $siteNodeAddress): ResponseInterface
+    {
+        $siteNodeAddress = NodeAddress::fromJsonString($siteNodeAddress);
+
+        $subgraph = $this->contentRepositoryRegistry->get($siteNodeAddress->contentRepositoryId)
+            ->getContentSubgraph($siteNodeAddress->workspaceName, $siteNodeAddress->dimensionSpacePoint);
+
+        $nodeInfoList = [];
+
+        $nodeInfoHelper = new FastNodeInfoHelper();
+
+        foreach ($this->presets as $presetConfiguration) {
+            if ($presetConfiguration['type'] === 'tree') {
+                continue;
+            }
+
+            $preset = Preset::fromArray($presetConfiguration);
+
+            // TODO also load ancestors recursively in case the neos ui has not loaded these yet -> needed so node creation works
+            $node = $subgraph->findNodeById($preset->parentNodeAggregateId);
+
+            if ($node) {
+                try {
+                    $nodeInfo = $nodeInfoHelper->getMinimalFastNodeInformation($node, $this->request);
+                } catch (\Throwable $e) {
+                    throw new \RuntimeException(sprintf('Could not serialize node %s: %s', NodeAddress::fromNode($node)->toJson(), $e->getMessage()), 1789988684, $e);
+                }
+
+                $nodeInfoList[$nodeInfo['contextPath']] = $nodeInfo;
+            }
+        }
+
+        return new Response(
+            headers: ['Content-Type' => 'application/json'],
+            body: json_encode([
+                'nodeInfos' => $nodeInfoList
+            ])
         );
     }
 }

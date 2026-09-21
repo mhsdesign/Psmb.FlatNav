@@ -15,4 +15,13 @@ final readonly class Preset
         public ?NodeTypeName $newNodeTypeName,
     ) {
     }
+
+    /** @param array<int|string,mixed> $array */
+    public static function fromArray(array $array): self
+    {
+        return new self(
+            parentNodeAggregateId: NodeAggregateId::fromString($array['parentNodeAggregateId']),
+            newNodeTypeName: isset($array['newNodeType']) ? NodeTypeName::fromString($array['newNodeType']) : null,
+        );
+    }
 }

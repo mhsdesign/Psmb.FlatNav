@@ -30,7 +30,7 @@ manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
     containerRegistry.set('LeftSideBar/Top/PageTreeToolbar', () => null);
     containerRegistry.set('LeftSideBar/Top/PageTreeSearchbar', () => null);
 
-    containerRegistry.set('LeftSideBar/Top/PageTree', makeFlatNavContainer(OriginalTree, nodePeerVariationHandler));
+    containerRegistry.set('LeftSideBar/Top/PageTree', makeFlatNavContainer(OriginalTree, nodePeerVariationHandler, store));
 
     const sagasRegistry = globalRegistry.get('sagas');
     sagasRegistry.set('Psmb.FlatNav/convertSignals', {saga: convertSignals});

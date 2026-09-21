@@ -7,8 +7,9 @@ import {fetchWithErrorHandling} from '@neos-project/neos-ui-backend-connector';
 import FlatNav from './FlatNav';
 import style from './style.module.css';
 import debounce from './Helper/debounce';
+import {NodeAddress} from './nodeAddress';
 
-const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
+const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store) => {
     class FlatNavContainer extends Component {
         state = {};
 
@@ -20,6 +21,10 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
             this.loadingLock = {};
         }
 
+        componentDidMount() {
+            this.loadNavigationRootNodes();
+        }
+
         componentDidUpdate(prevProps) {
             // If the siteNodeContextPath or baseWorkspaceName have changed, fully reset the state
             if (
@@ -27,6 +32,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                 this.props.baseWorkspaceName !== prevProps.baseWorkspaceName
             ) {
                 this.fullReset();
+                this.loadNavigationRootNodes();
             }
         }
 
@@ -39,7 +45,8 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                     treeItems: [],
                     searchTerm: '',
                     includePeerVariants: true,
-                    moreNodesAvailable: true
+                    moreNodesAvailable: true,
+                    navigationRootNodeAddress: null,
                 };
             });
             return state;
@@ -50,6 +57,54 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
             this.setState({
                 ...defaultState
             });
+        }
+
+        loadNavigationRootNodes = () => {
+            const siteNodeAddress = NodeAddress.fromJsonString(this.props.siteNodeContextPath);
+
+            const params = new URLSearchParams({
+                'siteNodeAddress': siteNodeAddress.toJson(),
+            });
+
+            fetchWithErrorHandling.withCsrfToken(csrfToken => ({
+                url: `/neos/flatnav/availableNavigationRootNodes?${params.toString()}`,
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'X-Flow-Csrftoken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            }))
+                .then(response => response.json())
+                .then(jsonData => {
+                    const nodeInfos = jsonData['nodeInfos'];
+
+                    store.dispatch(actions.CR.Nodes.merge(
+                        nodeInfos
+                    ));
+
+                    const availableNavigationRootNodeAddress = {};
+
+                    Object.entries(this.props.options.presets).map(([presetName, presetConfiguration]) => {
+                        const navigationRootNodeAddress = siteNodeAddress.withAggregateId(presetConfiguration.parentNodeAggregateId);
+
+                        if (navigationRootNodeAddress.toJson() in nodeInfos) {
+                            availableNavigationRootNodeAddress[presetName] = navigationRootNodeAddress;
+                        }
+                    })
+
+                    this.setState(state => {
+                        return Object.fromEntries(Object.entries(state).map(([presetName, presetState]) =>
+                            [
+                                presetName,
+                                {
+                                    ...presetState,
+                                    navigationRootNodeAddress: availableNavigationRootNodeAddress[presetName] ?? null,
+                                }
+                            ]
+                        ))
+                    });
+                })
         }
 
         makeResetNodes = (preset, fetchNodes) => () => {
@@ -178,6 +233,12 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler) => {
                         if (preset.disabled) {
                             return null;
                         }
+
+                        const presetState = this.state[presetName];
+                        if (preset.type !== 'tree' && !presetState.navigationRootNodeAddress) {
+                            return null;
+                        }
+
                         const fetchNodes = this.makeFetchNodes(presetName)
                         const resetNodes = this.makeResetNodes(presetName, fetchNodes)
                         const debouncedFetchNodes = debounce(fetchNodes, 400);
