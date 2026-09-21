@@ -8,9 +8,12 @@ import HideSelectedNode from './HideSelectedNode';
 import DeleteSelectedNode from './DeleteSelectedNode';
 import mergeClassNames from 'classnames';
 import style from './style.module.css';
-import RefreshNodes from "./RefreshNodes";
-import SearchInput from "./SearchInput";
+import RefreshNodes from './RefreshNodes';
+import SearchInput from './SearchInput';
 import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals';
+import {NodeAddress} from './nodeAddress';
+import {ParentNodeLoader} from './ParentNodeLoader';
+import {NodeTreeItem} from './NodeTreeItem';
 
 @neos(globalRegistry => ({
     nodeTypesRegistry: globalRegistry.get('@neos-project/neos-ui-contentrepository'),
@@ -35,7 +38,6 @@ import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals
                 focused: selectors.CR.Nodes.focusedNodePathSelector(state),
                 siteNodeContextPath: selectors.CR.Nodes.siteNodeContextPathSelector(state),
                 baseWorkspaceName: state?.cr?.workspaces?.personalWorkspace?.baseWorkspace,
-                publishableNodes: state?.cr?.workspaces?.personalWorkspace?.publishableNodes,
                 isAllowedToAddChildOrSiblingNodes: true,
                 canBeDeleted,
                 canBeEdited
@@ -43,8 +45,6 @@ import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals
         }
     },
 {
-    setSrc: actions.UI.ContentCanvas.setSrc,
-    focus: actions.UI.PageTree.focus,
     openNodeCreationDialog: actions.UI.NodeCreationDialog.open,
     commenceNodeCreation: actions.CR.Nodes.commenceCreation,
     selectNodeType: actions.UI.SelectNodeTypeModal.apply,
@@ -61,6 +61,8 @@ export default class FlatNav extends Component {
     };
 
     subscription
+
+    parentNodeAddress
 
     componentDidMount() {
         if (
@@ -101,58 +103,24 @@ export default class FlatNav extends Component {
         }
     }
 
+    getParentNodeAddress = () => {
+        return this.parentNodeAddress ??= (() => {
+            const siteNodeAddress = NodeAddress.fromJsonString(this.props.siteNodeContextPath);
+
+            return this.props.preset.parentNodeAggregateId
+                ? siteNodeAddress.withAggregateId(this.props.preset.parentNodeAggregateId)
+                : siteNodeAddress
+        })();
+    }
+
     createNode = () => {
-        const siteNodeAddressObject = JSON.parse(this.props.siteNodeContextPath);
-        const parentNodeAddressObject = {
-            contentRepositoryId: siteNodeAddressObject.contentRepositoryId,
-            workspaceName: siteNodeAddressObject.workspaceName,
-            dimensionSpacePoint: siteNodeAddressObject.dimensionSpacePoint,
-            aggregateId: this.props.preset.parentNodeAggregateId || siteNodeAddressObject.aggregateId,
-        };
-        const parentNodeAddressString = JSON.stringify(parentNodeAddressObject);
-        this.props.commenceNodeCreation(parentNodeAddressString, undefined, 'into', this.props.preset.newNodeType || undefined);
+        const parentNodeAddress = this.getParentNodeAddress();
+
+        this.props.commenceNodeCreation(parentNodeAddress.toJson(), undefined, 'into', this.props.preset.newNodeType || undefined);
     }
 
     refreshFlatNav = () => {
         this.props.resetNodes();
-    }
-
-    renderNodeData = (nodeData) => {
-        const isFocused = this.props.focused === nodeData.contextPath;
-        const isDirty = Boolean(this.props.publishableNodes.find(i => (
-            i?.contextPath === nodeData.contextPath ||
-            i?.documentContextPath === nodeData.contextPath
-        )));
-
-        const nodeItemClassNames = mergeClassNames({
-            [style.node]: true,
-            [style.nodeFocused]: isFocused,
-            [style.nodeDirty]: isDirty,
-        })
-
-        return (
-            <div
-                className={nodeItemClassNames}
-                key={nodeData.contextPath}
-                onClick={() => {
-                    this.props.setSrc(nodeData?.uri);
-                    this.props.focus(nodeData.contextPath);
-                }}
-                role="button"
-            >
-                {
-                    nodeData?.properties?._hidden ? (
-                        <span className="fa-layers fa-fw">
-                            <Icon icon="circle" color="error" transform="shrink-3" />
-                            <Icon icon="times" transform="shrink-7" />
-                        </span>
-                    ) : null
-                }
-                <span className={style.nodeLabel}>
-                    {nodeData?.label}
-                </span>
-            </div>
-        );
     }
 
     renderTreeItems = () => {
@@ -170,7 +138,7 @@ export default class FlatNav extends Component {
                         const nodeData = this.props.nodeData?.[treeItemContextPath];
 
                         if (nodeData) {
-                            return this.renderNodeData(nodeData);
+                            return <NodeTreeItem nodeData={nodeData} />
                         }
                     }
                     return null;
@@ -208,7 +176,7 @@ export default class FlatNav extends Component {
                     if (nodeData) {
                         return <>
                             {dateSections}
-                            {this.renderNodeData(nodeData)}
+                            <NodeTreeItem nodeData={nodeData} />
                         </>;
                     }
                 }
@@ -269,6 +237,8 @@ export default class FlatNav extends Component {
                     </div>
                     {searchEnabled && <SearchInput searchTerm={this.props.searchTerm} onChange={this.props.setSearchTerm} placeholder={this.props.i18nRegistry.translate('Psmb.FlatNav:Main:search')}/>}
                 </div>
+
+                <ParentNodeLoader nodeAddress={this.getParentNodeAddress()} />
 
                 <div className={style.treeWrapper}>
                     {this.renderTreeItems()}
