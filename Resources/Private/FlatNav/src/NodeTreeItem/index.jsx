@@ -40,7 +40,7 @@ export const NodeTreeItem = (props) => {
                     <span className="fa-layers fa-fw">
                         <Icon icon="circle" color="error" transform="shrink-3"/>
                         <Icon icon="times" transform="shrink-7"/>
-                        </span>
+                    </span>
                 ) : null
             }
             <span className={style.nodeLabel}>

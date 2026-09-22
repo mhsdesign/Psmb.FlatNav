@@ -6,6 +6,7 @@
     width: 80vw;
     max-width: 1200px;
     height: calc(80vh - 190px);;
+    background: #fff;
 }
 
 .copyDescriptionCorner {

@@ -15,7 +15,7 @@ export const NodeVariantReferenceTreeItem = (props) => {
             onClick={props.onClick}
             role="button"
         >
-            <Icon icon="copy" />
+            <Icon padded="right" icon="copy" />
             <span className={style.nodeLabel}>
             {props.label}
         </span>
