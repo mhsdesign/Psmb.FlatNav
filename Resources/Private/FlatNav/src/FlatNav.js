@@ -13,6 +13,7 @@ import SearchInput from './SearchInput';
 import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals';
 import {NavigationRootItem} from './NavigationRootItem';
 import {NodeTreeItem} from './NodeTreeItem';
+import {NodeVariantReferenceTreeItem} from './NodeVariantReferenceTreeItem';
 
 @neos(globalRegistry => ({
     nodeTypesRegistry: globalRegistry.get('@neos-project/neos-ui-contentrepository'),
@@ -111,6 +112,19 @@ export default class FlatNav extends Component {
         this.props.resetNodes();
     }
 
+    makeHandleNodePeerVariation = (nodeVariantReference) => async () => {
+        const {variantWasCreated} = await this.props.nodePeerVariationHandler.transactions.start(
+            nodeVariantReference.nodeAggregateId,
+            nodeVariantReference.peerVariantOriginDimension,
+            nodeVariantReference.label,
+            nodeVariantReference.peerVariantOriginLabel,
+            nodeVariantReference.peerVariantOriginPreviewUri,
+        );
+        if (variantWasCreated) {
+            this.refreshFlatNav();
+        }
+    }
+
     renderTreeItems = () => {
         if (this.props.searchTerm && !this.props.isLoading &&  this.props.treeItems.length === 0) {
             return <span className={style.toolbarSearchNoResults}>{this.props.i18nRegistry.translate('Psmb.FlatNav:Main:noResults')}</span>
@@ -126,9 +140,21 @@ export default class FlatNav extends Component {
                         const nodeData = this.props.nodeData?.[treeItemContextPath];
 
                         if (nodeData) {
-                            return <NodeTreeItem nodeData={nodeData} />
+                            return <NodeTreeItem
+                                key={treeItemContextPath}
+                                nodeData={nodeData}
+                            />
                         }
                     }
+
+                    if (treeItem.nodeVariantReference) {
+                        return <NodeVariantReferenceTreeItem
+                            key={treeItem.nodeVariantReference.nodeAggregateId}
+                            label={treeItem.nodeVariantReference.label}
+                            onClick={this.makeHandleNodePeerVariation(treeItem.nodeVariantReference)}
+                        />;
+                    }
+
                     return null;
                 }).filter(i => i);
         }
@@ -164,7 +190,10 @@ export default class FlatNav extends Component {
                     if (nodeData) {
                         return <>
                             {dateSections}
-                            <NodeTreeItem nodeData={nodeData} />
+                            <NodeTreeItem
+                                key={treeItemContextPath}
+                                nodeData={nodeData}
+                            />
                         </>;
                     }
                 }
@@ -177,28 +206,11 @@ export default class FlatNav extends Component {
 
                     return (<>
                         {dateSections}
-                        <div
-                            className={nodeItemClassNames}
+                        <NodeVariantReferenceTreeItem
                             key={treeItem.nodeVariantReference.nodeAggregateId}
-                            onClick={async () => {
-                                const {variantWasCreated} = await this.props.nodePeerVariationHandler.transactions.start(
-                                    treeItem.nodeVariantReference.nodeAggregateId,
-                                    treeItem.nodeVariantReference.peerVariantOriginDimension,
-                                    treeItem.nodeVariantReference.label,
-                                    treeItem.nodeVariantReference.peerVariantOriginLabel,
-                                    treeItem.nodeVariantReference.peerVariantOriginPreviewUri,
-                                );
-                                if (variantWasCreated) {
-                                    this.refreshFlatNav();
-                                }
-                            }}
-                            role="button"
-                        >
-                            <Icon icon="copy" />
-                            <span className={style.nodeLabel}>
-                                {treeItem.nodeVariantReference.label}
-                            </span>
-                        </div>
+                            label={treeItem.nodeVariantReference.label}
+                            onClick={this.makeHandleNodePeerVariation(treeItem.nodeVariantReference)}
+                        />
                     </>);
                 }
 

@@ -1,10 +1,12 @@
 .node {
-    display: block;
+    display: flex;
+    overflow: hidden;
     width: 100%;
     white-space: nowrap;
     text-overflow: ellipsis;
     padding: 0.25rem 1rem;
     cursor: pointer;
+    align-items: center;
 
     &:hover {
         .nodeIconWrapper,
@@ -15,26 +17,15 @@
     }
 }
 
-.nodeFocused .nodeLabel {
-    color: var(--colors-PrimaryBlue);
-}
-.nodeDirty {
-    border-left: 2px solid var(--colors-Warn);
-}
-.nodeRemoved {
-    cursor: not-allowed;
-    border-color: var(--colors-Error);
-}
-
 .nodeLabel {
     overflow-x: hidden;
     width: 100%;
     text-overflow: ellipsis;
     display: inline-block;
-    height: auto;
-    font-size: 16px;
-    padding: 0.8rem 1rem;
-    text-align: center;
-    font-weight: bold;
-    border-bottom: 1px solid var(--colors-ContrastDark);
+}
+
+.nodeForeign {
+    opacity: 0.8;
+    font-style: italic;
+    text-decoration: underline;
 }
