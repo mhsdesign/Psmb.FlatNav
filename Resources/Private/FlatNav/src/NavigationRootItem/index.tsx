@@ -17,7 +17,7 @@ export const NavigationRootItem: React.FC<{
     const publishableNodes = useSelector(state => state?.cr?.workspaces?.personalWorkspace?.publishableNodes);
 
     const isFocused = focusedNodeAddress === node?.contextPath;
-    const isDirty = React.useMemo(() => Boolean(publishableNodes.find(i => (
+    const isDirty = React.useMemo(() => node && Boolean(publishableNodes.find(i => (
         i?.contextPath === node.contextPath ||
         i?.documentContextPath === node.contextPath
     ))), [node, publishableNodes]);
