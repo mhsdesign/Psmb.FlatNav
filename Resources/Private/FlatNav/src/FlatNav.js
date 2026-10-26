@@ -159,10 +159,7 @@ export default class FlatNav extends Component {
                 }).filter(i => i);
         }
 
-        const renderedDateSections = {
-            // skip current year
-            [new Date().toLocaleString(undefined, {year: "numeric"})]: true
-        };
+        const renderedDateSections = {};
 
         return this.props.treeItems
             .map(treeItem => {
@@ -199,11 +196,6 @@ export default class FlatNav extends Component {
                 }
 
                 if (treeItem.nodeVariantReference) {
-                    const nodeItemClassNames = mergeClassNames({
-                        [style.node]: true,
-                        [style.nodeForeign]: true
-                    })
-
                     return (<>
                         {dateSections}
                         <NodeVariantReferenceTreeItem
