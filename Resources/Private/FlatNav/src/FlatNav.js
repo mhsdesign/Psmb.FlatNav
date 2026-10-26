@@ -242,7 +242,7 @@ export default class FlatNav extends Component {
 
                 <div className={style.treeWrapper}>
                     {this.renderTreeItems()}
-                    {(isLoading || (!this.props.preset.disablePagination && this.props.moreNodesAvailable && !this.props.searchTerm)) && (<Button
+                    {(isLoading || (!this.props.preset.disablePagination && this.props.moreNodesAvailable)) && (<Button
                         onClick={() => this.props.fetchNodes(true)}
                         style="clean"
                         className={style.loadMoreButton}
