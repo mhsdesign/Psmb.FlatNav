@@ -8,6 +8,7 @@ import FlatNav from './FlatNav';
 import style from './style.module.css';
 import debounce from './Helper/debounce';
 import {NodeAddress} from './nodeAddress';
+import {findAvailableNavigationRootNodes} from './Query/findAvailableNavigationRootNodes';
 
 const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store) => {
     class FlatNavContainer extends Component {
@@ -22,18 +23,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store)
         }
 
         componentDidMount() {
-            this.loadNavigationRootNodes();
-        }
-
-        componentDidUpdate(prevProps) {
-            // If the siteNodeContextPath or baseWorkspaceName have changed, fully reset the state
-            if (
-                this.props.siteNodeContextPath !== prevProps.siteNodeContextPath ||
-                this.props.baseWorkspaceName !== prevProps.baseWorkspaceName
-            ) {
-                this.fullReset();
-                this.loadNavigationRootNodes();
-            }
+            this.reloadNavigationRootNodesAndReset();
         }
 
         buildDefaultState = props => {
@@ -52,70 +42,43 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store)
             return state;
         };
 
-        fullReset = () => {
-            const defaultState = this.buildDefaultState(this.props);
-            this.setState({
-                ...defaultState
-            });
-        }
-
-        loadNavigationRootNodes = () => {
+        reloadNavigationRootNodesAndReset = async () => {
             const siteNodeAddress = NodeAddress.fromJsonString(this.props.siteNodeContextPath);
 
-            const params = new URLSearchParams({
-                'siteNodeAddress': siteNodeAddress.toJson(),
-            });
+            const nodeInfos = await findAvailableNavigationRootNodes(siteNodeAddress);
 
-            fetchWithErrorHandling.withCsrfToken(csrfToken => ({
-                url: `/neos/flatnav/availableNavigationRootNodes?${params.toString()}`,
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'X-Flow-Csrftoken': csrfToken,
-                    'Content-Type': 'application/json'
+            const availableNavigationRootNodeAddress = {};
+
+            Object.entries(this.props.options.presets).map(([presetName, presetConfiguration]) => {
+                const navigationRootNodeAddress = siteNodeAddress.withAggregateId(presetConfiguration.parentNodeAggregateId);
+
+                if (navigationRootNodeAddress.toJson() in nodeInfos) {
+                    availableNavigationRootNodeAddress[presetName] = navigationRootNodeAddress;
                 }
-            }))
-                .then(response => response.json())
-                .then(jsonData => {
-                    const nodeInfos = jsonData['nodeInfos'];
+            })
 
-                    store.dispatch(actions.CR.Nodes.merge(
-                        nodeInfos
-                    ));
+            const defaultState = this.buildDefaultState(this.props);
 
-                    const availableNavigationRootNodeAddress = {};
-
-                    Object.entries(this.props.options.presets).map(([presetName, presetConfiguration]) => {
-                        const navigationRootNodeAddress = siteNodeAddress.withAggregateId(presetConfiguration.parentNodeAggregateId);
-
-                        if (navigationRootNodeAddress.toJson() in nodeInfos) {
-                            availableNavigationRootNodeAddress[presetName] = navigationRootNodeAddress;
+            this.setState(
+                Object.fromEntries(Object.entries(defaultState).map(([presetName, presetState]) =>
+                    [
+                        presetName,
+                        {
+                            ...presetState,
+                            navigationRootNodeAddress: availableNavigationRootNodeAddress[presetName] ?? null,
                         }
-                    })
+                    ]
+                ))
+            );
 
-                    this.setState(state => {
-                        return Object.fromEntries(Object.entries(state).map(([presetName, presetState]) =>
-                            [
-                                presetName,
-                                {
-                                    ...presetState,
-                                    navigationRootNodeAddress: availableNavigationRootNodeAddress[presetName] ?? null,
-                                }
-                            ]
-                        ))
-                    });
-                })
+            store.dispatch(actions.CR.Nodes.merge(
+                nodeInfos
+            ));
         }
 
-        makeResetNodes = (preset, fetchNodes) => () => {
-            this.setState({
-                [preset]: {
-                    ...this.state[preset],
-                    page: 1,
-                    treeItems: [],
-                    moreNodesAvailable: true
-                }
-            }, fetchNodes);
+        makeResetNodes = (fetchNodes) => async () => {
+            await this.reloadNavigationRootNodesAndReset();
+            fetchNodes();
         }
 
         makeFetchNodes = preset => (loadMore = false) => {
@@ -240,7 +203,7 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store)
                         }
 
                         const fetchNodes = this.makeFetchNodes(presetName)
-                        const resetNodes = this.makeResetNodes(presetName, fetchNodes)
+                        const resetNodes = this.makeResetNodes(fetchNodes)
                         const debouncedFetchNodes = debounce(fetchNodes, 400);
                         const setSearchTerm = this.makeSetSearchTerm(presetName, debouncedFetchNodes)
                         const toggleIncludePeerVariants = this.makeToggleIncludePeerVariants(presetName, debouncedFetchNodes)
@@ -255,7 +218,6 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store)
                                     resetNodes={resetNodes}
                                     setSearchTerm={setSearchTerm}
                                     toggleIncludePeerVariants={toggleIncludePeerVariants}
-                                    fullReset={this.fullReset}
                                     {...this.state[presetName]}
                                 />)}
                                 {preset.type === 'tree' && (<OriginalPageTree />)}
@@ -271,7 +233,6 @@ const makeFlatNavContainer = (OriginalPageTree, nodePeerVariationHandler, store)
         i18nRegistry: globalRegistry.get('i18n')
     }))(connect(state => ({
         siteNodeContextPath: state?.cr?.nodes?.siteNode,
-        baseWorkspaceName: state?.cr?.workspaces?.personalWorkspace?.baseWorkspace
     }), {
         merge: actions.CR.Nodes.merge
     })(FlatNavContainer));

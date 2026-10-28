@@ -36,28 +36,26 @@ export const NavigationRootItem: React.FC<{
         store.dispatch(actions.UI.PageTree.focus(node.contextPath));
     }, [store, node]);
 
-    if (!node) {
-        return '';
-    }
-
     return (
         <div
             className={nodeItemClassNames}
-            key={node.contextPath}
+            key={node?.contextPath ?? props.nodeAddress.toJson()}
             onClick={onClick}
             role="button"
         >
             {
-                node.properties?._hidden ? (
+                node?.properties?._hidden ? (
                     <span className="fa-layers fa-fw">
                         <Icon icon="circle" color="error" transform="shrink-3"/>
                         <Icon icon="times" transform="shrink-7"/>
                         </span>
                 ) : null
             }
-            <span className={style.nodeLabel}>
-                {node.label}
-            </span>
+            {
+                <span className={style.nodeLabel}>
+                    {node?.label ?? 'Loading ...'}
+                </span>
+            }
         </div>
     );
 }

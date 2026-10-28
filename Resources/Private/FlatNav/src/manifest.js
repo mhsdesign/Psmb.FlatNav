@@ -3,9 +3,15 @@ import manifest from '@neos-project/neos-ui-extensibility';
 import makeFlatNavContainer from './makeFlatNavContainer';
 import style from './style.module.css';
 import {createNodePeerVariationHandler, registerDialog, createNodeVariantCreationNeosUiAdapter} from './NodePeerVariation';
-import {takeLatest} from 'redux-saga/effects';
+import {takeLatest, take} from 'redux-saga/effects';
 import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
-import {changeDimensionSpacePoint, createNode} from './signals';
+import {
+    changeBaseWorkspace,
+    changeDimensionSpacePoint,
+    createNode,
+    publishOrDiscardWorkspace,
+    rebaseWorkspace
+} from './signals';
 
 manifest('Psmb.FlatNav:FlatNav', {}, (globalRegistry, {store}) => {
     const containerRegistry = globalRegistry.get('containers');
@@ -62,10 +68,26 @@ function* convertSignals() {
     yield takeLatest([actionTypes.CR.ContentDimensions.SET_ACTIVE, actionTypes.Changes.PERSIST], function* (action) {
         if (action.type === actionTypes.CR.ContentDimensions.SET_ACTIVE) {
             const newSerializedDimensionSpacePoint = JSON.stringify(action.payload.dimensionValues);
-            if (lastSerializedDimensionSpacePoint !== newSerializedDimensionSpacePoint) {
+            if (lastSerializedDimensionSpacePoint !== null && lastSerializedDimensionSpacePoint !== newSerializedDimensionSpacePoint) {
                 changeDimensionSpacePoint();
-                lastSerializedDimensionSpacePoint = newSerializedDimensionSpacePoint;
             }
+            lastSerializedDimensionSpacePoint = newSerializedDimensionSpacePoint;
         }
+    });
+
+    yield takeLatest([actionTypes.CR.Workspaces.CHANGE_BASE_WORKSPACE], function* () {
+        yield take(actionTypes.CR.Nodes.RELOAD_STATE_FINISHED);
+        changeBaseWorkspace();
+    });
+
+    yield takeLatest([actionTypes.CR.Publishing.FINISHED, actionTypes.CR.Publishing.SUCEEDED], function* () {
+        yield take(actionTypes.CR.Nodes.SET_STATE);
+        // also discard
+        publishOrDiscardWorkspace();
+    });
+
+    yield takeLatest([actionTypes.CR.Syncing.SUCEEDED], function* () {
+        yield take(actionTypes.CR.Nodes.MERGE);
+        rebaseWorkspace();
     });
 }

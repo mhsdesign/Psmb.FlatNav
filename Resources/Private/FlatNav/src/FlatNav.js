@@ -6,11 +6,13 @@ import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 import {neos} from '@neos-project/neos-ui-decorators';
 import HideSelectedNode from './HideSelectedNode';
 import DeleteSelectedNode from './DeleteSelectedNode';
-import mergeClassNames from 'classnames';
 import style from './style.module.css';
 import RefreshNodes from './RefreshNodes';
 import SearchInput from './SearchInput';
-import {DimensionSpacePointWasChanged, NodeWasCreated, signals$} from './signals';
+import {
+    BaseWorkspaceWasChanged,
+    DimensionSpacePointWasChanged, NodeWasCreated, signals$, WorkspaceWasPublishedOrDiscarded, WorkspaceWasRebased
+} from './signals';
 import {NavigationRootItem} from './NavigationRootItem';
 import {NodeTreeItem} from './NodeTreeItem';
 import {NodeVariantReferenceTreeItem} from './NodeVariantReferenceTreeItem';
@@ -80,7 +82,12 @@ export default class FlatNav extends Component {
                         this.refreshFlatNav();
                     }
                 }
-                if (action instanceof DimensionSpacePointWasChanged) {
+                if (
+                    action instanceof DimensionSpacePointWasChanged
+                    || action instanceof WorkspaceWasPublishedOrDiscarded
+                    || action instanceof WorkspaceWasRebased
+                    || action instanceof BaseWorkspaceWasChanged
+                ) {
                     this.refreshFlatNav();
                 }
             }
